@@ -21,6 +21,7 @@
 #include <cusolverDn.h>
 #include <cuda_runtime.h>
 #include <cufft.h>
+#include <cufftXt.h>
 #include <cutensor.h>
 
 #define THREADS_PER_BLOCK 128

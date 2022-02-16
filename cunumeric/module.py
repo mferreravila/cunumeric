@@ -25,7 +25,7 @@ import numpy as np
 import opt_einsum as oe
 
 from .array import ndarray
-from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode
+from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection
 from .runtime import runtime
 
 _builtin_abs = abs
@@ -5266,6 +5266,64 @@ def convolve(a, v, mode="full"):
         v, a = a, v
 
     return a.convolve(v, mode)
+
+
+@add_boilerplate("a")
+def fft(a):
+    # Check for types, no conversions for now
+    fft_type = None
+    if a.dtype == np.complex128:
+        fft_type = FFTCode.FFT_Z2Z
+    elif a.dtype == np.complex64:
+        fft_type = FFTCode.FFT_C2C
+    elif a.dtype == np.float64:
+        fft_type = FFTCode.FFT_D2Z
+    elif a.dtype == np.float32:
+        fft_type = FFTCode.FFT_R2C
+    else:
+        raise TypeError("FFT input not supported, missing a conversion")
+
+    return a.fft(kind=fft_type, direction=FFTDirection.FORWARD)
+
+
+@add_boilerplate("a")
+def fft2(a):
+    return fft(a)
+
+
+@add_boilerplate("a")
+def fftn(a):
+    return fft(a)
+
+
+@add_boilerplate("a")
+def ifft(a):
+    # Check for types, no conversions for now
+    fft_type = None
+    if a.dtype == np.complex128:
+        fft_type = FFTCode.FFT_Z2Z
+    elif a.dtype == np.complex64:
+        fft_type = FFTCode.FFT_C2C
+    # These two cases need promotion to complex
+    # elif a.dtype == np.float64:
+    #     fft_type = FFTCode.FFT_Z2Z
+    # elif a.dtype == np.float32:
+    #     fft_type = FFTCode.FFT_C2C
+    else:
+        raise TypeError("FFT input not supported, missing a conversion")
+
+    return a.fft(kind=fft_type, direction=FFTDirection.INVERSE)
+
+
+@add_boilerplate("a")
+def ifft2(a):
+    # Ensure 2D
+    return ifft(a)
+
+
+@add_boilerplate("a")
+def ifftn(a):
+    return ifft(a)
 
 
 @add_boilerplate("a")

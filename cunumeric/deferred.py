@@ -781,6 +781,25 @@ class DeferredArray(NumPyThunk):
 
         task.execute()
 
+    @auto_convert([1])
+    def fft(self, lhs, kind, direction):
+        input  = self.base
+        output = lhs.base
+
+        task = self.context.create_task(CuNumericOpCode.FFT)
+
+        p_output = task.declare_partition(output)
+        p_input  = task.declare_partition(input)
+
+        task.add_output(output, partition=p_output)
+        task.add_input(input,   partition=p_input)
+        task.add_scalar_arg(kind.value, ty.int32)
+        task.add_scalar_arg(direction.value, ty.int32)
+
+        task.add_constraint(p_output == p_input)
+
+        task.execute()
+
     # Fill the cuNumeric array with the value in the numpy array
     def _fill(self, value):
         assert value.scalar
