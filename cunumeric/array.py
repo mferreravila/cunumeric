@@ -2196,6 +2196,23 @@ class ndarray(object):
         """
         return self.__array__().dumps()
 
+    def fft(self, s, kind, direction):
+        if self.ndim > 3:
+            raise NotImplementedError(
+                f"{self.ndim}-D arrays are not yet supported"
+            )
+        out_shape = self.shape
+        if s is not None:
+            out_shape = s
+        print(out_shape)
+        out = ndarray(
+            shape=out_shape,
+            dtype=self.dtype,
+            inputs=(self,)
+        )
+        self._thunk.fft(out._thunk, kind, direction)
+        return out
+
     def fill(self, value):
         """a.fill(value)
 
