@@ -5269,7 +5269,7 @@ def convolve(a, v, mode="full"):
 
 
 @add_boilerplate("a")
-def fft(a):
+def fft(a, s=None):
     # Check for types, no conversions for now
     fft_type = None
     if a.dtype == np.complex128:
@@ -5283,7 +5283,7 @@ def fft(a):
     else:
         raise TypeError("FFT input not supported, missing a conversion")
 
-    return a.fft(kind=fft_type, direction=FFTDirection.FORWARD)
+    return a.fft(s, kind=fft_type, direction=FFTDirection.FORWARD)
 
 
 @add_boilerplate("a")
@@ -5297,7 +5297,7 @@ def fftn(a):
 
 
 @add_boilerplate("a")
-def ifft(a):
+def ifft(a, s=None):
     # Check for types, no conversions for now
     fft_type = None
     if a.dtype == np.complex128:
@@ -5312,7 +5312,7 @@ def ifft(a):
     else:
         raise TypeError("FFT input not supported, missing a conversion")
 
-    return a.fft(kind=fft_type, direction=FFTDirection.INVERSE)
+    return a.fft(s, kind=fft_type, direction=FFTDirection.INVERSE)
 
 
 @add_boilerplate("a")

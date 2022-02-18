@@ -46,6 +46,15 @@ def test_1d():
 
     assert np.allclose(out, out_num)
 
+def test_1d_s():
+    Z     = np.random.rand(1000000) + np.random.rand(1000000) * 1j
+    Z_num = num.array(Z)
+
+    out       = np.fft.fft(Z, n=250)
+    out_num   = num.fft(Z_num, s=250)
+
+    assert np.allclose(out, out_num)
+
 def test_1d_inverse():
     Z     = np.random.rand(1000000) + np.random.rand(1000000) * 1j
     Z_num = num.array(Z)
@@ -83,6 +92,18 @@ def test_2d():
     # print(out_num)
     assert num.allclose(out, out_num)
 
+def test_2d_s():
+    Z     = np.random.rand(128, 1024) + np.random.rand(128, 1024) * 1j
+    Z_num = num.array(Z)
+
+    out       = np.fft.fft2(Z, s=(64,512))
+    out_num   = num.fft(Z_num, s=(64,512))
+
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
+    assert num.allclose(out, out_num)
+
 def test_2d_inverse():
     Z     = np.random.rand(128, 1024) + np.random.rand(128, 1024) * 1j
     Z_num = num.array(Z)
@@ -108,6 +129,18 @@ def test_3d():
     # print(out_num)
     assert num.allclose(out, out_num)
 
+def test_3d_s():
+    Z     = np.random.rand(64, 40, 100) + np.random.rand(64, 40, 100) * 1j
+    Z_num = num.array(Z)
+
+    out       = np.fft.fftn(Z, s=(63,20,99))
+    out_num   = num.fft(Z_num, s=(63,20,99))
+
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
+    assert num.allclose(out, out_num)
+
 def test_3d_inverse():
     Z     = np.random.rand(64, 40, 100) + np.random.rand(64, 40, 100) * 1j
     Z_num = num.array(Z)
@@ -120,11 +153,27 @@ def test_3d_inverse():
     # print(out_num)
     assert num.allclose(out, out_num)
 
+def test_3d_inverse_s():
+    Z     = np.random.rand(64, 40, 100) + np.random.rand(64, 40, 100) * 1j
+    Z_num = num.array(Z)
+
+    out       = np.fft.ifftn(Z, s=(12,37,50), norm='forward')
+    out_num   = num.ifft(Z_num, s=(12,37,50))
+
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
+    assert num.allclose(out, out_num)
+
 if __name__ == "__main__":
     test_1d()
+    test_1d_s()
     test_1d_inverse()
     test_1d_fp32()
     test_2d()
+    test_2d_s()
     test_2d_inverse()
     test_3d()
+    test_3d_s()
     test_3d_inverse()
+    test_3d_inverse_s()

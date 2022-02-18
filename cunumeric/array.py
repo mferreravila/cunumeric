@@ -1252,13 +1252,17 @@ class ndarray(object):
     def dumps(self):
         return self.__array__().dumps()
 
-    def fft(self, kind, direction):
+    def fft(self, s, kind, direction):
         if self.ndim > 3:
             raise NotImplementedError(
                 f"{self.ndim}-D arrays are not yet supported"
             )
+        out_shape = self.shape
+        if s is not None:
+            out_shape = s
+        print(out_shape)
         out = ndarray(
-            shape=self.shape,
+            shape=out_shape,
             dtype=self.dtype,
             inputs=(self,)
         )
