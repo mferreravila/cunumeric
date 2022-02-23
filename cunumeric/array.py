@@ -1252,21 +1252,27 @@ class ndarray(object):
     def dumps(self):
         return self.__array__().dumps()
 
-    def fft(self, s, kind, direction):
+    def fft(self, s, axes, kind, direction):
         if self.ndim > 3:
             raise NotImplementedError(
-                f"{self.ndim}-D arrays are not yet supported"
+                f"{self.ndim}-D arrays are not supported yet"
             )
+
         out_shape = self.shape
         if s is not None:
             out_shape = s
-        print(out_shape)
+
+        if axes is not None:
+            if len(axes) != len(set(axes)):
+                raise ValueError(
+                    "Repeated axes are not supported yet"
+                )
         out = ndarray(
             shape=out_shape,
             dtype=self.dtype,
             inputs=(self,)
         )
-        self._thunk.fft(out._thunk, kind, direction)
+        self._thunk.fft(out._thunk, axes, kind, direction)
         return out
 
     def fill(self, value):

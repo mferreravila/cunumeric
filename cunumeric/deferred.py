@@ -782,7 +782,7 @@ class DeferredArray(NumPyThunk):
         task.execute()
 
     @auto_convert([1])
-    def fft(self, lhs, kind, direction):
+    def fft(self, lhs, axes, kind, direction):
         input  = self.base
         output = lhs.base
 
@@ -795,6 +795,9 @@ class DeferredArray(NumPyThunk):
         task.add_input(input,   partition=p_input)
         task.add_scalar_arg(kind.value, ty.int32)
         task.add_scalar_arg(direction.value, ty.int32)
+        if axes is not None:
+            for ax in axes:
+                task.add_scalar_arg(ax, ty.int64)
 
         task.add_constraint(p_output == p_input)
 

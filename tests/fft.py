@@ -51,7 +51,7 @@ def test_1d_s():
     Z_num = num.array(Z)
 
     out       = np.fft.fft(Z, n=250)
-    out_num   = num.fft(Z_num, s=250)
+    out_num   = num.fft(Z_num, n=250)
 
     assert np.allclose(out, out_num)
 
@@ -85,7 +85,7 @@ def test_2d():
     Z_num = num.array(Z)
 
     out       = np.fft.fft2(Z)
-    out_num   = num.fft(Z_num)
+    out_num   = num.fft2(Z_num)
 
     # print(out)
     # print('-----------------------------------------------------------------------')
@@ -96,20 +96,32 @@ def test_2d_s():
     Z     = np.random.rand(128, 1024) + np.random.rand(128, 1024) * 1j
     Z_num = num.array(Z)
 
-    out       = np.fft.fft2(Z, s=(64,512))
-    out_num   = num.fft(Z_num, s=(64,512))
+    out       = np.fft.fft2(Z,  s=(64,512))
+    out_num   = num.fft2(Z_num, s=(64,512))
 
     # print(out)
     # print('-----------------------------------------------------------------------')
     # print(out_num)
     assert num.allclose(out, out_num)
 
+def test_2d_axes():
+    Z     = np.random.rand(128, 256) + np.random.rand(128, 256) * 1j
+    Z_num = num.array(Z)
+
+    out0       = np.fft.fft2(Z, axes=[0])
+    out0_num   = num.fft2(Z_num, axes=[0])
+    assert num.allclose(out0, out0_num)
+
+    out1       = np.fft.fft2(Z, axes=[1])
+    out1_num   = num.fft2(Z_num, axes=[1])
+    assert num.allclose(out1, out1_num)
+
 def test_2d_inverse():
     Z     = np.random.rand(128, 1024) + np.random.rand(128, 1024) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.ifft2(Z, norm='forward')
-    out_num   = num.ifft(Z_num)
+    out_num   = num.ifft2(Z_num)
 
     # print(out)
     # print('-----------------------------------------------------------------------')
@@ -122,7 +134,7 @@ def test_3d():
     Z_num = num.array(Z)
 
     out       = np.fft.fftn(Z)
-    out_num   = num.fft(Z_num)
+    out_num   = num.fftn(Z_num)
 
     # print(out)
     # print('-----------------------------------------------------------------------')
@@ -134,19 +146,41 @@ def test_3d_s():
     Z_num = num.array(Z)
 
     out       = np.fft.fftn(Z, s=(63,20,99))
-    out_num   = num.fft(Z_num, s=(63,20,99))
+    out_num   = num.fftn(Z_num, s=(63,20,99))
 
     # print(out)
     # print('-----------------------------------------------------------------------')
     # print(out_num)
     assert num.allclose(out, out_num)
 
+def test_3d_axes():
+    Z     = np.random.rand(2, 10, 3) + np.random.rand(2, 10, 3) * 1j
+    Z_num = num.array(Z)
+
+    out0       = np.fft.fftn(Z, axes=[0])
+    out0_num   = num.fftn(Z_num, axes=[0])
+    assert num.allclose(out0, out0_num)
+
+    out1       = np.fft.fftn(Z, axes=[1])
+    out1_num   = num.fftn(Z_num, axes=[1])
+    assert num.allclose(out1, out1_num)
+
+    out2       = np.fft.fftn(Z, axes=[2])
+    out2_num   = num.fftn(Z_num, axes=[2])
+    assert num.allclose(out2, out2_num)
+
+    # print(Z)
+    # print('-----------------------------------------------------------------------')
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
+
 def test_3d_inverse():
     Z     = np.random.rand(64, 40, 100) + np.random.rand(64, 40, 100) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.ifftn(Z, norm='forward')
-    out_num   = num.ifft(Z_num)
+    out_num   = num.ifftn(Z_num)
 
     # print(out)
     # print('-----------------------------------------------------------------------')
@@ -158,7 +192,7 @@ def test_3d_inverse_s():
     Z_num = num.array(Z)
 
     out       = np.fft.ifftn(Z, s=(12,37,50), norm='forward')
-    out_num   = num.ifft(Z_num, s=(12,37,50))
+    out_num   = num.ifftn(Z_num, s=(12,37,50))
 
     # print(out)
     # print('-----------------------------------------------------------------------')
@@ -166,14 +200,17 @@ def test_3d_inverse_s():
     assert num.allclose(out, out_num)
 
 if __name__ == "__main__":
+    np.random.seed(0)
     test_1d()
     test_1d_s()
     test_1d_inverse()
     test_1d_fp32()
     test_2d()
     test_2d_s()
+    test_2d_axes()
     test_2d_inverse()
     test_3d()
     test_3d_s()
+    test_3d_axes()
     test_3d_inverse()
     test_3d_inverse_s()

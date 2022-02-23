@@ -87,7 +87,7 @@ class NumPyThunk(ABC):
         ...
 
     @abstractmethod
-    def fft(self, out, kind, direction):
+    def fft(self, out, axes, kind, direction):
         ...
 
     @abstractmethod

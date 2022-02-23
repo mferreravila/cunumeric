@@ -86,7 +86,6 @@ std::vector<StoreMapping> CuNumericMapper::store_mappings(
     }
     // Temporary mapping until I figure out what this is for :)
     case CUNUMERIC_FFT: {
-      printf("FFT MAPPINGS\n");
       std::vector<StoreMapping> mappings;
       auto& inputs  = task.inputs();
       auto& outputs = task.outputs();

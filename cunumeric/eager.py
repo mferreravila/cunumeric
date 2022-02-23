@@ -226,7 +226,7 @@ class EagerArray(NumPyThunk):
 
                 out.array = convolve(self.array, v.array, mode)
 
-    def fft(self, out, kind, direction):
+    def fft(self, out, axes, kind, direction):
         if self.deferred is not None:
             self.deferred(out, kind, direction)
         else:

@@ -22,11 +22,12 @@
 namespace cunumeric {
 
 struct FFTArgs {
-  Array          output;
-  Array          input;
-  fftType        type;
-  fftDirection   direction;
-  Legion::Domain root_domain;
+  Array            output;
+  Array            input;
+  fftType          type;
+  fftDirection     direction;
+  std::vector<int64_t> axes;
+  // Legion::Domain root_domain;
 };
 
 class FFTTask : public CuNumericTask<FFTTask> {
