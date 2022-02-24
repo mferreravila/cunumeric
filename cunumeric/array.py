@@ -2206,17 +2206,20 @@ class ndarray(object):
         if s is not None:
             out_shape = s
 
+        fft_axes = None
         if axes is not None:
             if len(axes) != len(set(axes)):
                 raise ValueError(
                     "Repeated axes are not supported yet"
                 )
+            fft_axes = [x % self.ndim for x in axes]
+
         out = ndarray(
             shape=out_shape,
             dtype=self.dtype,
             inputs=(self,)
         )
-        self._thunk.fft(out._thunk, axes, kind, direction)
+        self._thunk.fft(out._thunk, fft_axes, kind, direction)
         return out
 
     def fill(self, value):
