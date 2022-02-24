@@ -108,6 +108,7 @@ struct cufft_axes_plan<3, OUTPUT_TYPE, INPUT_TYPE>{
                                       fftDirection direction) {
     bool is_inner_axis = (axis == 1);
     if(is_inner_axis) {
+      // TODO: use PointInRectIterator<DIM>
       auto num_slices = in_rect.hi[0] - in_rect.lo[0] + 1;
       for(unsigned n = 0; n < num_slices; ++n){
         const Point<3> offset = Point<3>(n, 0, 0);

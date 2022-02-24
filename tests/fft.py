@@ -116,6 +116,15 @@ def test_2d_axes():
     out1_num   = num.fft2(Z_num, axes=[1])
     assert num.allclose(out1, out1_num)
 
+    out_1       = np.fft.fft2(Z, axes=[-1])
+    out_1_num   = num.fft2(Z_num, axes=[-1])
+    assert num.allclose(out_1, out_1_num)
+
+    out_2       = np.fft.fft2(Z, axes=[-2])
+    out_2_num   = num.fft2(Z_num, axes=[-2])
+    assert num.allclose(out_2, out_2_num)
+
+
 def test_2d_inverse():
     Z     = np.random.rand(128, 1024) + np.random.rand(128, 1024) * 1j
     Z_num = num.array(Z)
@@ -168,6 +177,18 @@ def test_3d_axes():
     out2       = np.fft.fftn(Z, axes=[2])
     out2_num   = num.fftn(Z_num, axes=[2])
     assert num.allclose(out2, out2_num)
+
+    out_minus1       = np.fft.fftn(Z, axes=[-1])
+    out_minus1_num   = num.fftn(Z_num, axes=[-1])
+    assert num.allclose(out_minus1, out_minus1_num)
+
+    out_minus2       = np.fft.fftn(Z, axes=[-2])
+    out_minus2_num   = num.fftn(Z_num, axes=[-2])
+    assert num.allclose(out_minus2, out_minus2_num)
+
+    out_minus5       = np.fft.fftn(Z, axes=[-3])
+    out_minus5_num   = num.fftn(Z_num, axes=[-3])
+    assert num.allclose(out_minus5, out_minus5_num)
 
     # print(Z)
     # print('-----------------------------------------------------------------------')

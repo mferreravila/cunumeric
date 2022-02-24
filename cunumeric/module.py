@@ -5294,8 +5294,6 @@ def fftn(a, s=None, axes=None):
     else:
         raise TypeError("FFT input not supported, missing a conversion")
 
-    #TODO sanitize axes
-
     return a.fft(s, axes, kind=fft_type, direction=FFTDirection.FORWARD)
 
 
