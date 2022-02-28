@@ -5497,7 +5497,7 @@ def convolve(a, v, mode="full"):
 
 @add_boilerplate("a")
 def fft(a, n=None, axis=None):
-    s = [n] if n is not None else None
+    s = (n,) if n is not None else None
     return fftn(a, s, axis)
 
 
@@ -5529,6 +5529,7 @@ def ifft(a, n=None, axis=None):
     s = [n] if n is not None else None
     return ifftn(a, s, axis)
 
+
 @add_boilerplate("a")
 def ifft2(a, s=None, axes=None):
     # Ensure 2D
@@ -5553,6 +5554,55 @@ def ifftn(a, s=None, axes=None):
 
     return a.fft(s, axes, kind=fft_type, direction=FFTDirection.INVERSE)
 
+
+@add_boilerplate("a")
+def rfft(a, n=None, axis=None):
+    s = [n] if n is not None else None
+    return rfftn(a, s, axis)
+
+
+@add_boilerplate("a")
+def rfft2(a, s=None, axes=None):
+    return rfftn(a, s, axes)
+
+
+@add_boilerplate("a")
+def rfftn(a, s=None, axes=None):
+    # Check for types, no conversions for now
+    fft_type = None
+    if a.dtype == np.float64:
+        fft_type = FFTCode.FFT_D2Z
+    elif a.dtype == np.float32:
+        fft_type = FFTCode.FFT_R2C
+    else:
+        raise TypeError("FFT input not supported, missing a conversion")
+
+    return a.fft(s, axes, kind=fft_type, direction=FFTDirection.FORWARD)
+
+
+@add_boilerplate("a")
+def irfft(a, n=None, axis=None):
+    s = [n] if n is not None else None
+    return irfftn(a, s, axis)
+
+
+@add_boilerplate("a")
+def irfft2(a, s=None, axes=None):
+    return irfftn(a, s, axes)
+
+
+@add_boilerplate("a")
+def irfftn(a, s=None, axes=None):
+    # Check for types, no conversions for now
+    fft_type = None
+    if a.dtype == np.complex128:
+        fft_type = FFTCode.FFT_Z2D
+    elif a.dtype == np.complex64:
+        fft_type = FFTCode.FFT_C2R
+    else:
+        raise TypeError("FFT input not supported, missing a conversion")
+
+    return a.fft(s, axes, kind=fft_type, direction=FFTDirection.INVERSE)
 
 @add_boilerplate("a")
 def clip(a, a_min, a_max, out=None):
