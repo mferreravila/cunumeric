@@ -23,7 +23,7 @@ import pyarrow
 
 from legate.core import Array
 
-from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode
+from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection
 from .runtime import runtime
 
 
@@ -1260,7 +1260,15 @@ class ndarray(object):
 
         out_shape = self.shape
         if s is not None:
-            out_shape = s
+            zero_padded_input = self
+            if np.any(np.greater(s, self.shape)):
+                max_size = tuple(np.maximum(s,self.shape))
+                zero_padded_input = ndarray(shape=max_size, dtype=self.dtype)
+                zero_padded_input.fill(0)
+                zero_padded_input._thunk.set_item(tuple(slice(0,i) for i in self.shape), self._thunk)
+
+            fft_input  = ndarray(shape=s, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in s)))
+            out_shape  = s
 
         fft_axes = None
         if axes is not None:
@@ -1270,12 +1278,38 @@ class ndarray(object):
                 )
             fft_axes = [x % self.ndim for x in axes]
 
+        output_type = self.dtype
+        if kind == FFTCode.FFT_D2Z:
+            output_type = np.complex128
+        elif kind == FFTCode.FFT_R2C:
+            output_type = np.complex64
+        elif kind == FFTCode.FFT_Z2D:
+            output_type = np.float64
+        elif kind == FFTCode.FFT_C2R:
+            output_type = np.float32
+
+        # R2C / C2R require different output shapes
+        if output_type != self.dtype:
+            if fft_axes is None:
+                out_shape = list(out_shape)
+                if direction == FFTDirection.FORWARD:
+                    out_shape[-1] = out_shape[-1]//2 + 1
+                else:
+                    out_shape[-1] = 2 * (self.shape[-1] - 1)
+                out_shape = tuple(out_shape)
+
+        # print(self._thunk.shape)
+        # print(out_shape)
+
         out = ndarray(
             shape=out_shape,
-            dtype=self.dtype,
+            dtype=output_type,
             inputs=(self,)
         )
-        self._thunk.fft(out._thunk, fft_axes, kind, direction)
+        if s is None:
+            self._thunk.fft(out._thunk, fft_axes, kind, direction)
+        else:
+            fft_input._thunk.fft(out._thunk, fft_axes, kind, direction)
         return out
 
     def fill(self, value):

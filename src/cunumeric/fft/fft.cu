@@ -48,7 +48,7 @@ __host__ static inline void cufft_operation(void* output,
     Point<DIM> fft_size_out = out_rect.hi - out_rect.lo + one;
     num_elements = 1;
     for(int i = 0; i < DIM; ++i) {
-      n[i]          = fft_size_out[i];
+      n[i]          = (type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? fft_size_in[i] : fft_size_out[i];
       inembed[i]    = fft_size_in[i];
       onembed[i]    = fft_size_out[i];
       num_elements *= n[i];
