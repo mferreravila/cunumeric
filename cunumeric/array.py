@@ -23,7 +23,7 @@ import pyarrow
 
 from legate.core import Array
 
-from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection
+from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection, FFTNormalization
 from .runtime import runtime
 from .utils import dot_modes
 
@@ -2196,12 +2196,13 @@ class ndarray(object):
         """
         return self.__array__().dumps()
 
-    def fft(self, s, axes, kind, direction):
+    def fft(self, s, axes, kind, direction, norm):
         if self.ndim > 3:
             raise NotImplementedError(
                 f"{self.ndim}-D arrays are not supported yet"
             )
 
+        fft_input = self
         out_shape = self.shape
         if s is not None:
             zero_padded_input = self
@@ -2250,10 +2251,27 @@ class ndarray(object):
             dtype=output_type,
             inputs=(self,)
         )
-        if s is None:
-            self._thunk.fft(out._thunk, fft_axes, kind, direction)
-        else:
-            fft_input._thunk.fft(out._thunk, fft_axes, kind, direction)
+
+        fft_input._thunk.fft(out._thunk, fft_axes, kind, direction)
+
+        normalization_parser = {
+        'forward'  : FFTNormalization.FORWARD,
+        'backward' : FFTNormalization.INVERSE,
+        'ortho'    : FFTNormalization.ORTHOGONAL
+        }
+        fft_normalization = normalization_parser.get(norm, FFTNormalization.INVERSE)
+        do_normalization  = (fft_normalization == FFTNormalization.ORTHOGONAL)
+        do_normalization  = do_normalization or (fft_normalization == FFTNormalization.FORWARD and direction == FFTDirection.FORWARD)
+        do_normalization  = do_normalization or (fft_normalization == FFTNormalization.INVERSE and direction == FFTDirection.INVERSE)
+
+        if do_normalization:
+            factor = 1
+            norm_shape = fft_input.shape if direction == FFTDirection.FORWARD else out.shape
+            for i in norm_shape:
+                factor *= i
+            factor = np.sqrt(factor) if (fft_normalization == FFTNormalization.ORTHOGONAL) else factor
+            return out * 1./factor
+
         return out
 
     def fill(self, value):

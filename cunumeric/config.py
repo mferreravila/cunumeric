@@ -208,3 +208,25 @@ class CuNumericTunable(IntEnum):
     NUM_PROCS = _cunumeric.CUNUMERIC_TUNABLE_NUM_PROCS
     MAX_EAGER_VOLUME = _cunumeric.CUNUMERIC_TUNABLE_MAX_EAGER_VOLUME
     HAS_NUMAMEM = _cunumeric.CUNUMERIC_TUNABLE_HAS_NUMAMEM
+
+
+# Match these to fftType in fft_util.h
+@unique
+class FFTCode(IntEnum):
+    FFT_R2C = 0x2a
+    FFT_C2R = 0x2c 
+    FFT_C2C = 0x29 
+    FFT_D2Z = 0x6a 
+    FFT_Z2D = 0x6c 
+    FFT_Z2Z = 0x69
+
+@unique
+class FFTDirection(IntEnum):
+    FORWARD = -1
+    INVERSE =  1
+
+@unique
+class FFTNormalization(IntEnum):
+    FORWARD    =  1
+    INVERSE    =  2
+    ORTHOGONAL =  3
