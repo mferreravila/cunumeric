@@ -222,3 +222,9 @@ class FFTCode(IntEnum):
 class FFTDirection(IntEnum):
     FORWARD = -1
     INVERSE =  1
+
+@unique
+class FFTNormalization(IntEnum):
+    FORWARD    =  1
+    INVERSE    =  2
+    ORTHOGONAL =  3
