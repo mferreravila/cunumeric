@@ -467,6 +467,30 @@ def test_3d_c2r_norm():
     # print(out_num)
     assert num.allclose(out, out_num)
 
+def test_1d_hfft():
+    Z     = np.random.rand(1000) + np.random.rand(1000) * 1j
+    Z_num = num.array(Z)
+
+    out       = np.fft.hfft(Z)
+    out_num   = num.hfft(Z_num)
+
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
+
+    assert np.allclose(out, out_num)
+
+def test_1d_hfft_inverse():
+    Z     = np.random.rand(10)
+    Z_num = num.array(Z)
+
+    out       = np.fft.ihfft(Z)
+    out_num   = num.ihfft(Z_num)
+
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
+    assert np.allclose(out, out_num)
 
 if __name__ == "__main__":
     np.random.seed(0)
@@ -505,3 +529,5 @@ if __name__ == "__main__":
     test_2d_c2r()
     test_3d_c2r()
     test_3d_c2r_norm()
+    test_1d_hfft()
+    test_1d_hfft_inverse()
