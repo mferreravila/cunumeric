@@ -2202,8 +2202,20 @@ class ndarray(object):
                 f"{self.ndim}-D arrays are not supported yet"
             )
 
+        # Type
+        fft_output_type = self.dtype
+        if kind == FFTCode.FFT_D2Z:
+            fft_output_type = np.complex128
+        elif kind == FFTCode.FFT_R2C:
+            fft_output_type = np.complex64
+        elif kind == FFTCode.FFT_Z2D:
+            fft_output_type = np.float64
+        elif kind == FFTCode.FFT_C2R:
+            fft_output_type = np.float32
+
+        # Shape
         fft_input = self
-        out_shape = self.shape
+        fft_output_shape = self.shape
         if s is not None:
             zero_padded_input = self
             if np.any(np.greater(s, self.shape)):
@@ -2211,10 +2223,19 @@ class ndarray(object):
                 zero_padded_input = ndarray(shape=max_size, dtype=self.dtype)
                 zero_padded_input.fill(0)
                 zero_padded_input._thunk.set_item(tuple(slice(0,i) for i in self.shape), self._thunk)
-
             fft_input  = ndarray(shape=s, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in s)))
-            out_shape  = s
+            fft_output_shape  = s
+        # R2C / C2R require different output shapes
+        if fft_output_type != self.dtype:
+            if fft_axes is None:
+                fft_output_shape = list(fft_output_shape)
+                if direction == FFTDirection.FORWARD:
+                    fft_output_shape[-1] = fft_output_shape[-1]//2 + 1
+                else:
+                    fft_output_shape[-1] = 2 * (self.shape[-1] - 1)
+                fft_output_shape = tuple(fft_output_shape)
 
+        # User axes
         fft_axes = None
         if axes is not None:
             if len(axes) != len(set(axes)):
@@ -2223,47 +2244,19 @@ class ndarray(object):
                 )
             fft_axes = [x % self.ndim for x in axes]
 
-        output_type = self.dtype
-        if kind == FFTCode.FFT_D2Z:
-            output_type = np.complex128
-        elif kind == FFTCode.FFT_R2C:
-            output_type = np.complex64
-        elif kind == FFTCode.FFT_Z2D:
-            output_type = np.float64
-        elif kind == FFTCode.FFT_C2R:
-            output_type = np.float32
-
-        # R2C / C2R require different output shapes
-        if output_type != self.dtype:
-            if fft_axes is None:
-                out_shape = list(out_shape)
-                if direction == FFTDirection.FORWARD:
-                    out_shape[-1] = out_shape[-1]//2 + 1
-                else:
-                    out_shape[-1] = 2 * (self.shape[-1] - 1)
-                out_shape = tuple(out_shape)
-
-        # print(self._thunk.shape)
-        # print(out_shape)
-
+        # Execute FFT backend
         out = ndarray(
-            shape=out_shape,
-            dtype=output_type,
+            shape=fft_output_shape,
+            dtype=fft_output_type,
             inputs=(self,)
         )
-
         fft_input._thunk.fft(out._thunk, fft_axes, kind, direction)
 
-        normalization_parser = {
-        'forward'  : FFTNormalization.FORWARD,
-        'backward' : FFTNormalization.INVERSE,
-        'ortho'    : FFTNormalization.ORTHOGONAL
-        }
-        fft_normalization = normalization_parser.get(norm, FFTNormalization.INVERSE)
+        # Normalization
+        fft_normalization = FFTNormalization.from_string(norm)
         do_normalization  = (fft_normalization == FFTNormalization.ORTHOGONAL)
         do_normalization  = do_normalization or (fft_normalization == FFTNormalization.FORWARD and direction == FFTDirection.FORWARD)
         do_normalization  = do_normalization or (fft_normalization == FFTNormalization.INVERSE and direction == FFTDirection.INVERSE)
-
         if do_normalization:
             factor = 1
             norm_shape = fft_input.shape if direction == FFTDirection.FORWARD else out.shape
