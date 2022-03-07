@@ -228,3 +228,23 @@ class FFTNormalization(IntEnum):
     FORWARD    =  1
     INVERSE    =  2
     ORTHOGONAL =  3
+    
+    @staticmethod
+    def from_string(in_string):
+        if in_string == 'forward':
+            return FFTNormalization.FORWARD
+        elif in_string == 'ortho':
+            return FFTNormalization.ORTHOGONAL
+        elif in_string == 'backward' or in_string is None:
+            return FFTNormalization.INVERSE
+        else:
+            return None
+
+    @staticmethod
+    def reverse(in_string):
+        if in_string == 'forward':
+            return 'backward'
+        elif in_string == 'backward' or in_string is None:
+            return 'forward'
+        else:
+            return in_string
