@@ -1281,6 +1281,14 @@ class ndarray(object):
                 zero_padded_input._thunk.set_item(tuple(slice(0,i) for i in self.shape), self._thunk)
             fft_input  = ndarray(shape=s, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in s)))
             fft_output_shape  = s
+        # User axes
+        fft_axes = None
+        if axes is not None:
+            if len(axes) != len(set(axes)):
+                raise ValueError(
+                    "Repeated axes are not supported yet"
+                )
+            fft_axes = [x % self.ndim for x in axes]
         # R2C / C2R require different output shapes
         if fft_output_type != self.dtype:
             if fft_axes is None:
@@ -1291,14 +1299,6 @@ class ndarray(object):
                     fft_output_shape[-1] = 2 * (self.shape[-1] - 1)
                 fft_output_shape = tuple(fft_output_shape)
 
-        # User axes
-        fft_axes = None
-        if axes is not None:
-            if len(axes) != len(set(axes)):
-                raise ValueError(
-                    "Repeated axes are not supported yet"
-                )
-            fft_axes = [x % self.ndim for x in axes]
 
         # Execute FFT backend
         out = ndarray(

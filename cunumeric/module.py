@@ -25,7 +25,7 @@ import numpy as np
 import opt_einsum as oe
 
 from .array import ndarray
-from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection
+from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection, FFTNormalization
 from .runtime import runtime
 
 _builtin_abs = abs
