@@ -86,8 +86,10 @@ __host__ static inline void cufft_operation(void* output,
 template<int DIM, typename OUTPUT_TYPE, typename INPUT_TYPE>
 struct cufft_axes_plan{
   __host__ static inline void execute(cufftHandle plan,
-                                      AccessorWO<OUTPUT_TYPE, DIM> out,
-                                      AccessorRO<INPUT_TYPE, DIM> in,
+                                      // AccessorWO<OUTPUT_TYPE, DIM> out,
+                                      // AccessorRO<INPUT_TYPE, DIM> in,
+                                      DeferredBuffer<INPUT_TYPE, DIM>& out,
+                                      DeferredBuffer<INPUT_TYPE, DIM>& in,
                                       const Rect<DIM>& out_rect,
                                       const Rect<DIM>& in_rect,
                                       int axis,
@@ -100,8 +102,10 @@ struct cufft_axes_plan{
 template<typename OUTPUT_TYPE, typename INPUT_TYPE>
 struct cufft_axes_plan<3, OUTPUT_TYPE, INPUT_TYPE>{
   __host__ static inline void execute(cufftHandle plan,
-                                      AccessorWO<OUTPUT_TYPE, 3> out,
-                                      AccessorRO<INPUT_TYPE,  3> in,
+                                      // AccessorWO<OUTPUT_TYPE, 3> out,
+                                      // AccessorRO<INPUT_TYPE,  3> in,
+                                      DeferredBuffer<INPUT_TYPE, 3>& out,
+                                      DeferredBuffer<INPUT_TYPE, 3>& in,
                                       const Rect<3>& out_rect,
                                       const Rect<3>& in_rect,
                                       int axis,
@@ -155,7 +159,14 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
       num_elements *= n[i];
     }
 
-    for(auto ax = axes.begin(); ax < axes.end(); ++ax) {
+    // Copy input to temporary buffer to perform FFTs one by one
+    DeferredBuffer<INPUT_TYPE, DIM> input_buffer(Rect<DIM>(zero, fft_size_in - one),
+                                                 Memory::GPU_FB_MEM,
+                                                 nullptr /*initial*/,
+                                                 128 /*alignment*/);
+    CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+
+    for(auto ax = axes.begin(); ax != axes.end(); ++ax) {
       // Create the plan
       cufftHandle plan;
       CHECK_CUFFT(cufftCreate(&plan));
@@ -193,12 +204,13 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
       // For dimensions higher than 2D, we need to iterate through the input volume as 2D slices due to
       // limitations of cuFFT indexing in 1D
       // TODO: following function only correct for DIM <= 3. Fix for N-DIM case
-      cufft_axes_plan<DIM, OUTPUT_TYPE, INPUT_TYPE>::execute(plan, out, in, out_rect, in_rect, *ax, direction);
+      cufft_axes_plan<DIM, OUTPUT_TYPE, INPUT_TYPE>::execute(plan, input_buffer, input_buffer, out_rect, in_rect, *ax, direction);
 
       // Clean up our resources, DeferredBuffers are cleaned up by Legion
       CHECK_CUFFT(cufftDestroy(plan));
-      CHECK_CUDA(cudaStreamDestroy(stream));
     }
+    CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), input_buffer.ptr(zero), num_elements*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
 
