@@ -13,7 +13,9 @@
  * limitations under the License.
  *
  */
+#include <csignal>
 
+#include <unordered_set>
 #include "cunumeric/fft/fft.h"
 #include "cunumeric/fft/fft_template.inl"
 
@@ -142,21 +144,23 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
     size_t workarea_size;
-    size_t num_elements;
     int n[DIM];
     int inembed[DIM];
     int onembed[DIM];
+    // raise(SIGINT);
 
     const Point<DIM> zero   = Point<DIM>::ZEROES();
     const Point<DIM> one    = Point<DIM>::ONES();
     Point<DIM> fft_size_in  =  in_rect.hi -  in_rect.lo + one;
     Point<DIM> fft_size_out = out_rect.hi - out_rect.lo + one;
-    num_elements = 1;
+    size_t num_elements_in  = 1;
+    size_t num_elements_out = 1;
     for(int i = 0; i < DIM; ++i) {
-      n[i]          = fft_size_out[i];
+      n[i]          = (type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? fft_size_in[i] : fft_size_out[i];
       inembed[i]    = fft_size_in[i];
       onembed[i]    = fft_size_out[i];
-      num_elements *= n[i];
+      num_elements_in  *= fft_size_in[i];
+      num_elements_out *= fft_size_out[i];
     }
 
     // Copy input to temporary buffer to perform FFTs one by one
@@ -164,7 +168,7 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
                                                  Memory::GPU_FB_MEM,
                                                  nullptr /*initial*/,
                                                  128 /*alignment*/);
-    CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements_in*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
 
     for(auto ax = axes.begin(); ax != axes.end(); ++ax) {
       // Create the plan
@@ -177,7 +181,7 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
       // For now, contiguous plan with a single batch
       int size_1d = n[*ax];
       // TODO: batches only correct for DIM <= 3. Fix for N-DIM case
-      int batches = (DIM == 3 && *ax == 1) ? n[2] : num_elements / n[*ax];
+      int batches = (DIM == 3 && *ax == 1) ? n[2] : num_elements_in / n[*ax];
       int istride = 1;
       int ostride = 1;
       for(int i = *ax+1; i < DIM; ++i) {
@@ -209,7 +213,7 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
       // Clean up our resources, DeferredBuffers are cleaned up by Legion
       CHECK_CUFFT(cufftDestroy(plan));
     }
-    CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), input_buffer.ptr(zero), num_elements*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), input_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
     CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
@@ -230,10 +234,15 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
     void* out_ptr = (void*) out.ptr(zero);
     void* in_ptr  = (void*) in.ptr(zero);
 
-    if(axes.size() > 0) {
+    // This should be done in python layer, but for now...
+    std::unordered_set<int64_t> axes_set(axes.begin(), axes.end());
+
+    // More or less than one axis per dimension
+    if(axes.size() != axes_set.size() || axes.size() != DIM) {
       // FFTs are computed as 1D over different axes. Slower than performing the full FFT in a single step
       cufft_operation_by_axes<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
     }
+    // One axis per dimension can be done as a single operation
     else {
       // FFTs are computed as a single step of DIM
       cufft_operation<DIM>(out_ptr, in_ptr, out_rect, in_rect, axes, FFT_TYPE, direction);      

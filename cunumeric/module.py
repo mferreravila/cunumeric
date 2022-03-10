@@ -5325,10 +5325,20 @@ def ifftn(a, s=None, axes=None, norm=None):
         raise TypeError("FFT input not supported, missing a conversion")
     return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)
 
+def sanitize_s_axes(a, s, axes):
+    if s is None:
+        if axes is None:
+            s = list(a.shape)
+        else:
+            s = [list(a.shape)[ax] for ax in axes]
+    if axes is None:
+        axes = list(range(0, len(s)))
+    return s, axes
 
 @add_boilerplate("a")
 def rfft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
+    axis = (axis,) if axis is not None else None
     return rfftn(a=a, s=s, axes=axis, norm=norm)
 
 
@@ -5347,7 +5357,22 @@ def rfftn(a, s=None, axes=None, norm=None):
         fft_type = FFTCode.FFT_R2C
     else:
         raise TypeError("FFT input not supported, missing a conversion")
-    return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
+
+    s, axes = sanitize_s_axes(a, s, axes)
+    print('S {} AXES {} DIM {}'.format(s,axes, a.ndim))
+
+    operate_by_axes = (len(axes) != len(set(axes))) or (len(axes) != a.ndim)
+    # Operate by axes
+    if operate_by_axes:
+        r2c = a.fft(s=[s[-1]], axes=[axes[-1]], kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
+        if len(axes) > 1:
+            return r2c.fft(s=s[0:-1], axes=axes[0:-1], kind=FFTCode.FFT_Z2Z, direction=FFTDirection.FORWARD, norm=norm)
+        else:
+            return r2c
+    # Operate as a single FFT
+    else:
+        return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
+
 
 
 @add_boilerplate("a")

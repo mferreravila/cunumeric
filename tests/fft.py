@@ -45,12 +45,15 @@ def test_1d_norm():
     assert np.allclose(out, out_num)
 
 def test_1d_s():
-    Z     = np.random.rand(1000000) + np.random.rand(1000000) * 1j
+    Z     = np.random.rand(10) + np.random.rand(10) * 1j
     Z_num = num.array(Z)
 
-    out       = np.fft.fft(Z, n=250)
-    out_num   = num.fft(Z_num, n=250)
+    out       = np.fft.fft(Z, n=5)
+    out_num   = num.fft(Z_num, n=5)
 
+    print(out)
+    print('-----------------------------------------------------------------------')
+    print(out_num)
     assert np.allclose(out, out_num)
 
 def test_1d_larger_s():
@@ -181,7 +184,6 @@ def test_2d_axes():
     out5       = np.fft.fft2(Z, axes=[1, 0, 1])
     out5_num   = num.fft2(Z_num, axes=[1, 0, 1])
     assert num.allclose(out5, out5_num)
-
 
 def test_2d_inverse():
     Z     = np.random.rand(128, 1024) + np.random.rand(128, 1024) * 1j
@@ -387,15 +389,18 @@ def test_1d_s_r2c():
     assert np.allclose(out, out_num)
 
 def test_2d_r2c ():
-    Z     = np.random.rand(129, 1025)
+    Z     = np.random.rand(4, 2)
     Z_num = num.array(Z)
+    print('INPUT')
+    print(Z)
+    print()
 
     out       = np.fft.rfft2(Z)
     out_num   = num.rfft2(Z_num)
 
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
+    print(out)
+    print('-----------------------------------------------------------------------')
+    print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_s_r2c():
@@ -409,6 +414,68 @@ def test_2d_s_r2c():
     # print('-----------------------------------------------------------------------')
     # print(out_num)
     assert num.allclose(out, out_num)
+
+def test_2d_axes_r2c():
+    Z     = np.ones((4, 2))
+    Z[1][0] = 2.
+    Z_num = num.array(Z)
+    print('INPUT')
+    print(Z)
+    print()
+    
+    out0       = np.fft.rfft2(Z, axes=[0])
+    out0_num   = num.rfft2(Z_num, axes=[0])
+    print(out0)
+    print('-----------------------------------------------------------------------')
+    print(out0_num)
+    assert num.allclose(out0, out0_num)
+
+    print()
+    print()
+    print()
+
+    print('INPUT')
+    print(Z)
+    print()
+    out1       = np.fft.rfft2(Z, axes=[1])
+    out1_num   = num.rfft2(Z_num, axes=[1])
+    print('-----------------------------------------------------------------------')
+    print(out1)
+    print('-----------------------------------------------------------------------')
+    print(out1_num)
+    assert num.allclose(out1, out1_num)
+
+    # out3       = np.fft.rfft2(Z, axes=[0, 1])
+    # out3_num   = num.rfft2(Z_num, axes=[0, 1])
+    # print('-----------------------------------------------------------------------')
+    # print(out3)
+    # print('-----------------------------------------------------------------------')
+    # print(out3_num)
+    # assert num.allclose(out3, out3_num)
+
+    # out4       = np.fft.rfft2(Z, axes=[1, 0])
+    # out4_num   = num.rfft2(Z_num, axes=[1, 0])
+    # print('-----------------------------------------------------------------------')
+    # print(out4)
+    # print('-----------------------------------------------------------------------')
+    # print(out4_num)
+
+    # out_1       = np.fft.rfft2(Z, axes=[-1])
+    # out_1_num   = num.rfft2(Z_num, axes=[-1])
+    # assert num.allclose(out_1, out_1_num)
+
+    # out_2       = np.fft.rfft2(Z, axes=[-2])
+    # out_2_num   = num.rfft2(Z_num, axes=[-2])
+    # assert num.allclose(out_2, out_2_num)
+
+    # out4       = np.fft.rfft2(Z, axes=[1, 0])
+    # out4_num   = num.rfft2(Z_num, axes=[1, 0])
+    # assert num.allclose(out4, out4_num)
+
+    # out5       = np.fft.rfft2(Z, axes=[1, 0, 1])
+    # out5_num   = num.rfft2(Z_num, axes=[1, 0, 1])
+    # assert num.allclose(out5, out5_num)
+
 
 def test_3d_r2c():
     Z     = np.random.rand(65, 42, 101)
@@ -556,3 +623,9 @@ if __name__ == "__main__":
     test_3d_c2r_norm()
     test_1d_hfft()
     test_1d_hfft_inverse()
+
+    print()
+    print()
+    print()
+    print()
+    test_2d_axes_r2c()
