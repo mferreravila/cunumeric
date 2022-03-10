@@ -1,4 +1,4 @@
-/* Copyright 2021 NVIDIA Corporation
+/* Copyright 2022 NVIDIA Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ struct FFTArgs {
   fftType          type;
   fftDirection     direction;
   std::vector<int64_t> axes;
-  // Legion::Domain root_domain;
 };
 
 class FFTTask : public CuNumericTask<FFTTask> {

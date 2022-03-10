@@ -32,6 +32,7 @@ enum class fftType {
     FFT_Z2Z = 0x69   // Double-complex to double-complex (interleaved)
 };
 
+// These fft directions match directions in cuFFT (CUFFT_FORWARD, CUFFT_INVERSE)
 enum class fftDirection {
   FFT_FORWARD = -1,
   FFT_INVERSE =  1
@@ -100,6 +101,5 @@ struct FFT<fftType::FFT_Z2Z, LegateTypeCode::COMPLEX128_LT> {
   static constexpr bool valid = true;
   static constexpr LegateTypeCode CODE_OUT = LegateTypeCode::COMPLEX128_LT;
 };
-
 
 }  // namespace cunumeric

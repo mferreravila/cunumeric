@@ -1252,6 +1252,16 @@ class ndarray(object):
     def dumps(self):
         return self.__array__().dumps()
 
+    def sanitize_s_axes(self, s, axes):
+        if s is None:
+            if axes is None:
+                s = list(a.shape)
+            else:
+                s = [list(a.shape)[ax] for ax in axes]
+        if axes is None:
+            axes = list(range(0, len(s)))
+        return s, axes
+
     def fft(self, s, axes, kind, direction, norm):
         if self.ndim > 3:
             raise NotImplementedError(
@@ -1270,8 +1280,12 @@ class ndarray(object):
             fft_output_type = np.float32
 
         # Shape
+        s, axes = self.sanitize_s_axes(s, axes)
+        print('fft() s {} axes {}'.format(s, axes))
+
         fft_input = self
         fft_output_shape = self.shape
+
         if s is not None:
             zero_padded_input = self
             if np.any(np.greater(s, self.shape)):
@@ -1281,23 +1295,22 @@ class ndarray(object):
                 zero_padded_input._thunk.set_item(tuple(slice(0,i) for i in self.shape), self._thunk)
             fft_input  = ndarray(shape=s, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in s)))
             fft_output_shape  = s
+
         # User axes
         fft_axes = None
         if axes is not None:
-            if len(axes) != len(set(axes)):
-                raise ValueError(
-                    "Repeated axes are not supported yet"
-                )
             fft_axes = [x % self.ndim for x in axes]
+            fft_axes.reverse()
         # R2C / C2R require different output shapes
         if fft_output_type != self.dtype:
-            if fft_axes is None:
-                fft_output_shape = list(fft_output_shape)
-                if direction == FFTDirection.FORWARD:
-                    fft_output_shape[-1] = fft_output_shape[-1]//2 + 1
-                else:
-                    fft_output_shape[-1] = 2 * (self.shape[-1] - 1)
-                fft_output_shape = tuple(fft_output_shape)
+            fft_output_shape = list(fft_output_shape)
+            r_ax = -1 if fft_axes is None else fft_axes[0]
+            print(r_ax, fft_output_shape)
+            if direction == FFTDirection.FORWARD:
+                fft_output_shape[r_ax] = fft_output_shape[r_ax]//2 + 1
+            else:
+                fft_output_shape[r_ax] = 2 * (self.shape[r_ax] - 1)
+            fft_output_shape = tuple(fft_output_shape)
 
 
         # Execute FFT backend

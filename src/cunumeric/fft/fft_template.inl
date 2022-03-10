@@ -1,4 +1,4 @@
-/* Copyright 2021 NVIDIA Corporation
+/* Copyright 2022 NVIDIA Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,18 +73,11 @@ static void fft_template(TaskContext& context)
   auto& outputs  = context.outputs();
   auto& scalars  = context.scalars();
 
-
   args.output    = std::move(outputs[0]);
   args.input     = std::move(inputs[0]);
   args.type      = scalars[0].value<fftType>();
   args.direction = scalars[1].value<fftDirection>();
-
   for(size_t i = 2; i < scalars.size(); ++i) args.axes.push_back(scalars[i].value<int64_t>());
-
-  // for(auto i = args.axes.begin(); i < args.axes.end(); ++i) {
-  //   printf("Axes = %d ", *i);
-  // }
-  // printf("\n");
 
   fft_dispatch(args.type, FFTDispatch<KIND>{}, args);
 }
