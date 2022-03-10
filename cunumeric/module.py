@@ -25,7 +25,7 @@ import numpy as np
 import opt_einsum as oe
 
 from .array import ndarray
-from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection
+from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection, FFTNormalization
 from .runtime import runtime
 
 _builtin_abs = abs
@@ -5271,12 +5271,12 @@ def convolve(a, v, mode="full"):
 @add_boilerplate("a")
 def fft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
-    return fftn(a, s, axis, norm)
+    return fftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
 def fft2(a, s=None, axes=None, norm=None):
-    return fftn(a, s, axes, norm)
+    return fftn(a=a, s=s, axes=axes, norm=norm)
 
 
 @add_boilerplate("a")
@@ -5293,20 +5293,19 @@ def fftn(a, s=None, axes=None, norm=None):
         fft_type = FFTCode.FFT_R2C
     else:
         raise TypeError("FFT input not supported, missing a conversion")
-
     return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
 
 
 @add_boilerplate("a")
 def ifft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
-    return ifftn(a, s, axis, norm)
+    return ifftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
 def ifft2(a, s=None, axes=None, norm=None):
     # Ensure 2D
-    return ifftn(a, s, axes, norm)
+    return ifftn(a=a, s=s, axes=axes, norm=norm)
 
 
 @add_boilerplate("a")
@@ -5324,19 +5323,18 @@ def ifftn(a, s=None, axes=None, norm=None):
     #     fft_type = FFTCode.FFT_C2C
     else:
         raise TypeError("FFT input not supported, missing a conversion")
-
     return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)
 
 
 @add_boilerplate("a")
 def rfft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
-    return rfftn(a, s, axis, norm)
+    return rfftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
 def rfft2(a, s=None, axes=None, norm=None):
-    return rfftn(a, s, axes, norm)
+    return rfftn(a=a, s=s, axes=axes, norm=norm)
 
 
 @add_boilerplate("a")
@@ -5349,19 +5347,18 @@ def rfftn(a, s=None, axes=None, norm=None):
         fft_type = FFTCode.FFT_R2C
     else:
         raise TypeError("FFT input not supported, missing a conversion")
-
-    return a.fft(s, axes, kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
+    return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
 
 
 @add_boilerplate("a")
 def irfft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
-    return irfftn(a, s, axis, norm)
+    return irfftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
 def irfft2(a, s=None, axes=None, norm=None):
-    return irfftn(a, s, axes, norm)
+    return irfftn(a=a, s=s, axes=axes, norm=norm)
 
 
 @add_boilerplate("a")
@@ -5374,32 +5371,21 @@ def irfftn(a, s=None, axes=None, norm=None):
         fft_type = FFTCode.FFT_C2R
     else:
         raise TypeError("FFT input not supported, missing a conversion")
-
-    return a.fft(s, axes, kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)
+    return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)
 
 @add_boilerplate("a")
 def hfft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
-
     # Add checks to ensure input is hermitian?
     # Essentially a C2R FFT, with reverse sign (forward transform, forward norm)
-    if norm == 'forward':
-        norm = 'backward'
-    elif norm == 'backward' or norm is None:
-        norm = 'forward'
-    return irfftn(a.conjugate(), s, axis, norm)
+    return irfftn(a=a.conjugate(), s=s, axes=axis, norm=FFTNormalization.reverse(norm))
 
 @add_boilerplate("a")
 def ihfft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
-
     # Add checks to ensure input is hermitian?
     # Essentially a R2C FFT, with reverse sign (inverse transform, inverse norm)
-    if norm == 'forward':
-        norm = 'backward'
-    elif norm == 'backward' or norm is None:
-        norm = 'forward'
-    return rfftn(a, s, axis, norm).conjugate()
+    return rfftn(a=a, s=s, axes=axis, norm=FFTNormalization.reverse(norm)).conjugate()
 
 @add_boilerplate("a")
 def clip(a, a_min, a_max, out=None):

@@ -787,7 +787,6 @@ class DeferredArray(NumPyThunk):
         output = lhs.base
 
         task = self.context.create_task(CuNumericOpCode.FFT)
-
         p_output = task.declare_partition(output)
         p_input  = task.declare_partition(input)
 
@@ -798,7 +797,6 @@ class DeferredArray(NumPyThunk):
         if axes is not None:
             for ax in axes:
                 task.add_scalar_arg(ax, ty.int64)
-
         task.add_constraint(p_output == p_input)
 
         task.execute()
