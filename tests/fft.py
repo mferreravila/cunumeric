@@ -445,36 +445,32 @@ def test_2d_axes_r2c():
     print(out1_num)
     assert num.allclose(out1, out1_num)
 
-    # out3       = np.fft.rfft2(Z, axes=[0, 1])
-    # out3_num   = num.rfft2(Z_num, axes=[0, 1])
-    # print('-----------------------------------------------------------------------')
-    # print(out3)
-    # print('-----------------------------------------------------------------------')
-    # print(out3_num)
-    # assert num.allclose(out3, out3_num)
+    out3       = np.fft.rfft2(Z, axes=[0, 1])
+    out3_num   = num.rfft2(Z_num, axes=[0, 1])
+    print('-----------------------------------------------------------------------')
+    print(out3)
+    print('-----------------------------------------------------------------------')
+    print(out3_num)
+    assert num.allclose(out3, out3_num)
 
-    # out4       = np.fft.rfft2(Z, axes=[1, 0])
-    # out4_num   = num.rfft2(Z_num, axes=[1, 0])
-    # print('-----------------------------------------------------------------------')
-    # print(out4)
-    # print('-----------------------------------------------------------------------')
-    # print(out4_num)
+    out4       = np.fft.rfft2(Z, axes=[1, 0])
+    out4_num   = num.rfft2(Z_num, axes=[1, 0])
+    print('-----------------------------------------------------------------------')
+    print(out4)
+    print('-----------------------------------------------------------------------')
+    print(out4_num)
 
-    # out_1       = np.fft.rfft2(Z, axes=[-1])
-    # out_1_num   = num.rfft2(Z_num, axes=[-1])
-    # assert num.allclose(out_1, out_1_num)
+    out_1       = np.fft.rfft2(Z, axes=[-1])
+    out_1_num   = num.rfft2(Z_num, axes=[-1])
+    assert num.allclose(out_1, out_1_num)
 
-    # out_2       = np.fft.rfft2(Z, axes=[-2])
-    # out_2_num   = num.rfft2(Z_num, axes=[-2])
-    # assert num.allclose(out_2, out_2_num)
+    out_2       = np.fft.rfft2(Z, axes=[-2])
+    out_2_num   = num.rfft2(Z_num, axes=[-2])
+    assert num.allclose(out_2, out_2_num)
 
-    # out4       = np.fft.rfft2(Z, axes=[1, 0])
-    # out4_num   = num.rfft2(Z_num, axes=[1, 0])
-    # assert num.allclose(out4, out4_num)
-
-    # out5       = np.fft.rfft2(Z, axes=[1, 0, 1])
-    # out5_num   = num.rfft2(Z_num, axes=[1, 0, 1])
-    # assert num.allclose(out5, out5_num)
+    out5       = np.fft.rfft2(Z, axes=[1, 0, 1])
+    out5_num   = num.rfft2(Z_num, axes=[1, 0, 1])
+    assert num.allclose(out5, out5_num)
 
 
 def test_3d_r2c():
@@ -509,6 +505,53 @@ def test_3d_s_r2c():
     # print('-----------------------------------------------------------------------')
     # print(out_num)
     assert num.allclose(out, out_num)
+
+def test_3d_axes_r2c():
+    Z     = np.ones((2, 3, 4))
+    Z_num = num.array(Z)
+
+    out0       = np.fft.rfftn(Z, axes=[0])
+    out0_num   = num.rfftn(Z_num, axes=[0])
+    assert num.allclose(out0, out0_num)
+
+    out1       = np.fft.rfftn(Z, axes=[1])
+    out1_num   = num.rfftn(Z_num, axes=[1])
+    assert num.allclose(out1, out1_num)
+
+    out2       = np.fft.rfftn(Z, axes=[2])
+    out2_num   = num.rfftn(Z_num, axes=[2])
+    assert num.allclose(out2, out2_num)
+
+    out_minus1       = np.fft.rfftn(Z, axes=[-1])
+    out_minus1_num   = num.rfftn(Z_num, axes=[-1])
+    assert num.allclose(out_minus1, out_minus1_num)
+
+    out_minus2       = np.fft.rfftn(Z, axes=[-2])
+    out_minus2_num   = num.rfftn(Z_num, axes=[-2])
+    assert num.allclose(out_minus2, out_minus2_num)
+
+    out_minus5       = np.fft.rfftn(Z, axes=[-3])
+    out_minus5_num   = num.rfftn(Z_num, axes=[-3])
+    assert num.allclose(out_minus5, out_minus5_num)
+
+    out3       = np.fft.rfftn(Z, axes=[2, 1])
+    out3_num   = num.rfftn(Z_num, axes=[2, 1])
+    assert num.allclose(out3, out3_num)
+
+    out4       = np.fft.rfftn(Z, axes=[0, 2])
+    out4_num   = num.rfftn(Z_num, axes=[0, 2])
+    assert num.allclose(out4, out4_num)
+
+    out5       = np.fft.rfftn(Z, axes=[0, 2, 1, 1, -1])
+    out5_num   = num.rfftn(Z_num, axes=[0, 2, 1, 1, -1])
+    assert num.allclose(Z, Z_num)
+    assert num.allclose(out5, out5_num)
+
+    # print(Z)
+    # print('-----------------------------------------------------------------------')
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
 
 def test_1d_c2r():
     Z     = np.random.rand(1000) + np.random.rand(1000) * 1j
@@ -629,3 +672,9 @@ if __name__ == "__main__":
     print()
     print()
     test_2d_axes_r2c()
+
+    print()
+    print()
+    print()
+    print()
+    test_3d_axes_r2c()
