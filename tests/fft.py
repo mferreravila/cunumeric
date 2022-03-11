@@ -18,6 +18,11 @@ import scipy.signal as sig
 
 import cunumeric as num
 
+def allclose_float(A, B):
+    l2 = (A - B) * np.conj(A-B)
+    l2 = np.sqrt(np.sum(l2)/np.sum(A*np.conj(A)))
+    return l2 < 1e-6
+
 def test_1d():
     Z     = np.random.rand(1000000) + np.random.rand(1000000) * 1j
     Z_num = num.array(Z)
@@ -51,9 +56,9 @@ def test_1d_s():
     out       = np.fft.fft(Z, n=5)
     out_num   = num.fft(Z_num, n=5)
 
-    print(out)
-    print('-----------------------------------------------------------------------')
-    print(out_num)
+    # print(out)
+    # print('-----------------------------------------------------------------------')
+    # print(out_num)
     assert np.allclose(out, out_num)
 
 def test_1d_larger_s():
@@ -98,10 +103,7 @@ def test_1d_fp32():
     out       = np.fft.fft(Z)
     out_num   = num.fft(Z_num)
 
-    l2 = (out - out_num) * np.conj(out-out_num)
-    l2 = np.sqrt(np.sum(l2)/np.sum(out*np.conj(out)))
-
-    assert l2 < 1e-6
+    assert allclose_float(out, out_num)
 
 def test_2d():
     Z     = np.random.rand(128, 1024) + np.random.rand(128, 1024) * 1j
@@ -416,49 +418,23 @@ def test_2d_s_r2c():
     assert num.allclose(out, out_num)
 
 def test_2d_axes_r2c():
-    Z     = np.ones((4, 2))
-    Z[1][0] = 2.
+    Z     = np.random.rand(43, 197)
     Z_num = num.array(Z)
-    print('INPUT')
-    print(Z)
-    print()
     
     out0       = np.fft.rfft2(Z, axes=[0])
     out0_num   = num.rfft2(Z_num, axes=[0])
-    print(out0)
-    print('-----------------------------------------------------------------------')
-    print(out0_num)
     assert num.allclose(out0, out0_num)
 
-    print()
-    print()
-    print()
-
-    print('INPUT')
-    print(Z)
-    print()
     out1       = np.fft.rfft2(Z, axes=[1])
     out1_num   = num.rfft2(Z_num, axes=[1])
-    print('-----------------------------------------------------------------------')
-    print(out1)
-    print('-----------------------------------------------------------------------')
-    print(out1_num)
     assert num.allclose(out1, out1_num)
 
     out3       = np.fft.rfft2(Z, axes=[0, 1])
     out3_num   = num.rfft2(Z_num, axes=[0, 1])
-    print('-----------------------------------------------------------------------')
-    print(out3)
-    print('-----------------------------------------------------------------------')
-    print(out3_num)
     assert num.allclose(out3, out3_num)
 
     out4       = np.fft.rfft2(Z, axes=[1, 0])
     out4_num   = num.rfft2(Z_num, axes=[1, 0])
-    print('-----------------------------------------------------------------------')
-    print(out4)
-    print('-----------------------------------------------------------------------')
-    print(out4_num)
 
     out_1       = np.fft.rfft2(Z, axes=[-1])
     out_1_num   = num.rfft2(Z_num, axes=[-1])
@@ -507,7 +483,7 @@ def test_3d_s_r2c():
     assert num.allclose(out, out_num)
 
 def test_3d_axes_r2c():
-    Z     = np.ones((2, 3, 4))
+    Z     = np.random.rand(20, 13, 8)
     Z_num = num.array(Z)
 
     out0       = np.fft.rfftn(Z, axes=[0])
@@ -546,6 +522,45 @@ def test_3d_axes_r2c():
     out5_num   = num.rfftn(Z_num, axes=[0, 2, 1, 1, -1])
     assert num.allclose(Z, Z_num)
     assert num.allclose(out5, out5_num)
+
+    Z_float = Z.astype(np.float32)
+    Z_num_float = num.array(Z_float)
+
+    float_out0       = np.fft.rfftn(Z_float, axes=[0])
+    float_out0_num   = num.rfftn(Z_num_float, axes=[0])
+    assert allclose_float(float_out0, float_out0_num)
+
+    float_out1       = np.fft.rfftn(Z_float, axes=[1])
+    float_out1_num   = num.rfftn(Z_num_float, axes=[1])
+    assert allclose_float(float_out1, float_out1_num)
+
+    float_out2       = np.fft.rfftn(Z_float, axes=[2])
+    float_out2_num   = num.rfftn(Z_num_float, axes=[2])
+    assert allclose_float(float_out2, float_out2_num)
+
+    float_out_minus1       = np.fft.rfftn(Z_float, axes=[-1])
+    float_out_minus1_num   = num.rfftn(Z_num_float, axes=[-1])
+    assert allclose_float(float_out_minus1, float_out_minus1_num)
+
+    float_out_minus2       = np.fft.rfftn(Z_float, axes=[-2])
+    float_out_minus2_num   = num.rfftn(Z_num_float, axes=[-2])
+    assert allclose_float(float_out_minus2, float_out_minus2_num)
+
+    float_out_minus5       = np.fft.rfftn(Z_float, axes=[-3])
+    float_out_minus5_num   = num.rfftn(Z_num_float, axes=[-3])
+    assert allclose_float(float_out_minus5, float_out_minus5_num)
+
+    float_out3       = np.fft.rfftn(Z_float, axes=[2, 1])
+    float_out3_num   = num.rfftn(Z_num_float, axes=[2, 1])
+    assert allclose_float(float_out3, float_out3_num)
+
+    float_out4       = np.fft.rfftn(Z_float, axes=[0, 2])
+    float_out4_num   = num.rfftn(Z_num_float, axes=[0, 2])
+    assert allclose_float(float_out4, float_out4_num)
+
+    float_out5       = np.fft.rfftn(Z_float, axes=[0, 2, 1, 1, -1])
+    float_out5_num   = num.rfftn(Z_num_float, axes=[0, 2, 1, 1, -1])
+    assert allclose_float(float_out5, float_out5_num)
 
     # print(Z)
     # print('-----------------------------------------------------------------------')

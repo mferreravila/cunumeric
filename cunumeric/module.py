@@ -5335,6 +5335,13 @@ def sanitize_s_axes(a, s, axes):
         axes = list(range(0, len(s)))
     return s, axes
 
+def real_to_complex_kind(fft_type):
+    if fft_type == FFTCode.FFT_D2Z or fft_type == FFTCode.FFT_Z2D:
+        return FFTCode.FFT_Z2Z
+    elif fft_type == FFTCode.FFT_R2C or fft_type == FFTCode.FFT_C2R:
+        return FFTCode.FFT_C2C
+    return fft_type
+
 @add_boilerplate("a")
 def rfft(a, n=None, axis=None, norm=None):
     s = (n,) if n is not None else None
@@ -5366,7 +5373,7 @@ def rfftn(a, s=None, axes=None, norm=None):
     if operate_by_axes:
         r2c = a.fft(s=[s[-1]], axes=[axes[-1]], kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
         if len(axes) > 1:
-            return r2c.fft(s=s[0:-1], axes=axes[0:-1], kind=FFTCode.FFT_Z2Z, direction=FFTDirection.FORWARD, norm=norm)
+            return r2c.fft(s=s[0:-1], axes=axes[0:-1], kind=real_to_complex_kind(fft_type), direction=FFTDirection.FORWARD, norm=norm)
         else:
             return r2c
     # Operate as a single FFT
