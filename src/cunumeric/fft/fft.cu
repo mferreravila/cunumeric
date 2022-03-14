@@ -15,7 +15,6 @@
  */
 #include <csignal>
 
-#include <unordered_set>
 #include "cunumeric/fft/fft.h"
 #include "cunumeric/fft/fft_template.inl"
 
@@ -234,8 +233,8 @@ __host__ static inline void cufft_operation_by_axes_r2c(AccessorWO<OUTPUT_TYPE, 
     int n[DIM];
     int inembed[DIM];
     int onembed[DIM];
-    // raise(SIGINT);
 
+    // Full volume dimensions
     const Point<DIM> zero   = Point<DIM>::ZEROES();
     const Point<DIM> one    = Point<DIM>::ONES();
     Point<DIM> fft_size_in  =  in_rect.hi -  in_rect.lo + one;
@@ -262,54 +261,51 @@ __host__ static inline void cufft_operation_by_axes_r2c(AccessorWO<OUTPUT_TYPE, 
                                                   nullptr /*initial*/,
                                                   128 /*alignment*/);
 
-    for(auto ax = axes.begin(); ax != axes.end(); ++ax) {
-      // Create the plan
-      cufftHandle plan;
-      CHECK_CUFFT(cufftCreate(&plan));
-      CHECK_CUFFT(cufftSetAutoAllocation(plan, 0 /*we'll do the allocation*/));
-      CHECK_CUFFT(cufftSetStream(plan, stream));
+    auto ax = axes.begin();
 
-      // Create the plan and allocate a temporary buffer for it if it needs one
-      // For now, contiguous plan with a single batch
-      int size_1d = n[*ax];
-      // TODO: batches only correct for DIM <= 3. Fix for N-DIM case
-      int batches = (type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? num_elements_in / n[*ax] : num_elements_out / n[*ax];
-      if (DIM == 3 && *ax == 1) {
-        batches = n[2];
-      }
-      int istride = 1;
-      int ostride = 1;
-      for(int i = *ax+1; i < DIM; ++i) {
-        istride *= fft_size_in[i];
-        ostride *= fft_size_out[i];
-      }
+    // Create the plan
+    cufftHandle plan;
+    CHECK_CUFFT(cufftCreate(&plan));
+    CHECK_CUFFT(cufftSetAutoAllocation(plan, 0 /*we'll do the allocation*/));
+    CHECK_CUFFT(cufftSetStream(plan, stream));
 
-      int idist = (*ax == DIM-1) ? fft_size_in[*ax] : 1;
-      int odist = (*ax == DIM-1) ? fft_size_out[*ax] : 1;
-
-      CHECK_CUFFT(cufftMakePlanMany(plan, 1, &size_1d, inembed, istride, idist, onembed, ostride, odist, (cufftType)type, batches, &workarea_size));
-
-      DeferredBuffer<uint8_t, 1> workarea_buffer;
-      if(workarea_size > 0) {
-        const Point<1> zero1d(0);
-        workarea_buffer =
-          DeferredBuffer<uint8_t, 1>(Rect<1>(zero1d, Point<1>(workarea_size - 1)),
-                                     Memory::GPU_FB_MEM,
-                                     nullptr /*initial*/,
-                                     128 /*alignment*/);
-        void* workarea = workarea_buffer.ptr(zero1d);
-        CHECK_CUFFT(cufftSetWorkArea(plan, workarea));
-      }
-
-      // For dimensions higher than 2D, we need to iterate through the input volume as 2D slices due to
-      // limitations of cuFFT indexing in 1D
-      // TODO: following function only correct for DIM <= 3. Fix for N-DIM case
-      cufft_axes_plan<DIM, OUTPUT_TYPE, INPUT_TYPE>::execute(plan, output_buffer, input_buffer, out_rect, in_rect, *ax, direction);
-
-      // Clean up our resources, DeferredBuffers are cleaned up by Legion
-      CHECK_CUFFT(cufftDestroy(plan));
+    // Batched 1D dimensions
+    // TODO: batches only correct for DIM <= 3. Fix for N-DIM case
+    int size_1d = n[*ax];
+    int batches = (type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? num_elements_in / n[*ax] : num_elements_out / n[*ax];
+    if (DIM == 3 && *ax == 1) {
+      batches = n[2];
     }
+    int istride = 1;
+    int ostride = 1;
+    for(int i = *ax+1; i < DIM; ++i) {
+      istride *= fft_size_in[i];
+      ostride *= fft_size_out[i];
+    }
+    int idist = (*ax == DIM-1) ? fft_size_in[*ax] : 1;
+    int odist = (*ax == DIM-1) ? fft_size_out[*ax] : 1;
+
+    // Create the plan and allocate a temporary buffer for it if it needs one
+    CHECK_CUFFT(cufftMakePlanMany(plan, 1, &size_1d, inembed, istride, idist, onembed, ostride, odist, (cufftType)type, batches, &workarea_size));
+
+    DeferredBuffer<uint8_t, 1> workarea_buffer;
+    if(workarea_size > 0) {
+      const Point<1> zero1d(0);
+      workarea_buffer =
+        DeferredBuffer<uint8_t, 1>(Rect<1>(zero1d, Point<1>(workarea_size - 1)),
+                                   Memory::GPU_FB_MEM,
+                                   nullptr /*initial*/,
+                                   128 /*alignment*/);
+      void* workarea = workarea_buffer.ptr(zero1d);
+      CHECK_CUFFT(cufftSetWorkArea(plan, workarea));
+    }
+
+    cufft_axes_plan<DIM, OUTPUT_TYPE, INPUT_TYPE>::execute(plan, output_buffer, input_buffer, out_rect, in_rect, *ax, direction);
+
     CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), output_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+
+    // Clean up our resources, DeferredBuffers are cleaned up by Legion
+    CHECK_CUFFT(cufftDestroy(plan));    
     CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
@@ -323,26 +319,25 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
                            const Rect<DIM>& out_rect,
                            const Rect<DIM>& in_rect,
                            std::vector<int64_t>& axes,
-                           fftDirection direction) const
+                           fftDirection direction,
+                           bool operate_over_axes) const
   {
     const Point<DIM> zero = Point<DIM>::ZEROES();
     void* out_ptr = (void*) out.ptr(zero);
     void* in_ptr  = (void*) in.ptr(zero);
 
-    // This should be done in python layer, but for now...
-    std::unordered_set<int64_t> axes_set(axes.begin(), axes.end());
-
-    // More or less than one axis per dimension
-    if(axes.size() != axes_set.size() || axes.size() != DIM) {
-      // FFTs are computed as 1D over different axes. Slower than performing the full FFT in a single step
+    // FFTs are computed as 1D over different axes. Slower than performing the full FFT in a single step
+    if(operate_over_axes) {
+      // R2C / C2R always only 1D on a single axis (when performed over axes)
       if(FFT_TYPE != fftType::FFT_Z2Z && FFT_TYPE != fftType::FFT_C2C) {
         cufft_operation_by_axes_r2c<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
       }
+      // C2C can be multiple 1D dimensions over axes
       else {
         cufft_operation_by_axes<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);        
       }
     }
-    // One axis per dimension can be done as a single operation
+    // If we have one axis per dimension, then it can be done as a single operation (more performant)
     else {
       // FFTs are computed as a single step of DIM
       cufft_operation<DIM>(out_ptr, in_ptr, out_rect, in_rect, axes, FFT_TYPE, direction);      

@@ -41,7 +41,7 @@ struct FFTImpl {
     auto input  = args.input.read_accessor<INPUT_TYPE, DIM>(in_rect);
     auto output = args.output.write_accessor<OUTPUT_TYPE, DIM>(out_rect);
 
-    FFTImplBody<KIND, FFT_TYPE, FFT<FFT_TYPE,CODE_IN>::CODE_OUT, CODE_IN, DIM>()(output, input, out_rect, in_rect, args.axes, args.direction);
+    FFTImplBody<KIND, FFT_TYPE, FFT<FFT_TYPE,CODE_IN>::CODE_OUT, CODE_IN, DIM>()(output, input, out_rect, in_rect, args.axes, args.direction, args.operate_over_axes);
   }
 
   // We only support up to 3D FFTs for now
@@ -73,20 +73,14 @@ static void fft_template(TaskContext& context)
   auto& outputs  = context.outputs();
   auto& scalars  = context.scalars();
 
+  args.output            = std::move(outputs[0]);
+  args.input             = std::move(inputs[0]);
+  args.type              = scalars[0].value<fftType>();
+  args.direction         = scalars[1].value<fftDirection>();
+  args.operate_over_axes = static_cast<bool>(scalars[2].value<uint8_t>());
 
-  args.output    = std::move(outputs[0]);
-  args.input     = std::move(inputs[0]);
-  args.type      = scalars[0].value<fftType>();
-  args.direction = scalars[1].value<fftDirection>();
-
-  for(size_t i = 2; i < scalars.size(); ++i) args.axes.push_back(scalars[i].value<int64_t>());
-
-  // for(auto i = args.axes.begin(); i < args.axes.end(); ++i) {
-  //   printf("Axes = %d ", *i);
-  // }
-  // printf("\n");
+  for(size_t i = 3; i < scalars.size(); ++i) args.axes.push_back(scalars[i].value<int64_t>());
 
   fft_dispatch(args.type, FFTDispatch<KIND>{}, args);
 }
-
 }  // namespace cunumeric
