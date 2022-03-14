@@ -593,6 +593,38 @@ def test_2d_c2r():
     # print(out_num)
     assert num.allclose(out, out_num)
 
+def test_2d_axes_c2r():
+    Z     = np.random.rand(2, 3) + np.random.rand(2, 3) * 1j
+    Z_num = num.array(Z)
+    
+    out0       = np.fft.irfft2(Z, axes=[0])
+    out0_num   = num.irfft2(Z_num, axes=[0])
+    assert num.allclose(out0, out0_num)
+
+    out1       = np.fft.irfft2(Z, axes=[1])
+    out1_num   = num.irfft2(Z_num, axes=[1])
+    assert num.allclose(out1, out1_num)
+
+    out3       = np.fft.irfft2(Z, axes=[0, 1])
+    out3_num   = num.irfft2(Z_num, axes=[0, 1])
+    assert num.allclose(out3, out3_num)
+
+    out4       = np.fft.irfft2(Z, axes=[1, 0])
+    out4_num   = num.irfft2(Z_num, axes=[1, 0])
+    assert num.allclose(out4, out4_num)
+
+    out_1       = np.fft.irfft2(Z, axes=[-1])
+    out_1_num   = num.irfft2(Z_num, axes=[-1])
+    assert num.allclose(out_1, out_1_num)
+
+    out_2       = np.fft.irfft2(Z, axes=[-2])
+    out_2_num   = num.irfft2(Z_num, axes=[-2])
+    assert num.allclose(out_2, out_2_num)
+
+    out5       = np.fft.irfft2(Z, axes=[1, 0, 1])
+    out5_num   = num.irfft2(Z_num, axes=[1, 0, 1])
+    assert num.allclose(out5, out5_num)
+
 def test_3d_c2r():
     Z     = np.random.rand(64, 40, 50) + np.random.rand(64, 40, 50) * 1j
     Z_num = num.array(Z)
@@ -616,6 +648,86 @@ def test_3d_c2r_norm():
     # print('-----------------------------------------------------------------------')
     # print(out_num)
     assert num.allclose(out, out_num)
+
+def test_3d_axes_c2r():
+    Z     = np.random.rand(20, 13, 8) + np.random.rand(20, 13, 8) * 1j
+    Z_num = num.array(Z)
+
+    out0       = np.fft.irfftn(Z, axes=[0])
+    out0_num   = num.irfftn(Z_num, axes=[0])
+    assert num.allclose(out0, out0_num)
+
+    out1       = np.fft.irfftn(Z, axes=[1])
+    out1_num   = num.irfftn(Z_num, axes=[1])
+    assert num.allclose(out1, out1_num)
+
+    out2       = np.fft.irfftn(Z, axes=[2])
+    out2_num   = num.irfftn(Z_num, axes=[2])
+    assert num.allclose(out2, out2_num)
+
+    out_minus1       = np.fft.irfftn(Z, axes=[-1])
+    out_minus1_num   = num.irfftn(Z_num, axes=[-1])
+    assert num.allclose(out_minus1, out_minus1_num)
+
+    out_minus2       = np.fft.irfftn(Z, axes=[-2])
+    out_minus2_num   = num.irfftn(Z_num, axes=[-2])
+    assert num.allclose(out_minus2, out_minus2_num)
+
+    out_minus5       = np.fft.irfftn(Z, axes=[-3])
+    out_minus5_num   = num.irfftn(Z_num, axes=[-3])
+    assert num.allclose(out_minus5, out_minus5_num)
+
+    out3       = np.fft.irfftn(Z, axes=[2, 1])
+    out3_num   = num.irfftn(Z_num, axes=[2, 1])
+    assert num.allclose(out3, out3_num)
+
+    out4       = np.fft.irfftn(Z, axes=[0, 2])
+    out4_num   = num.irfftn(Z_num, axes=[0, 2])
+    assert num.allclose(out4, out4_num)
+
+    out5       = np.fft.irfftn(Z, axes=[0, 2, 1, 1, -1])
+    out5_num   = num.irfftn(Z_num, axes=[0, 2, 1, 1, -1])
+    assert num.allclose(Z, Z_num)
+    assert num.allclose(out5, out5_num)
+
+    Z_float = Z.astype(np.complex64)
+    Z_num_float = num.array(Z_float)
+
+    float_out0       = np.fft.irfftn(Z_float, axes=[0])
+    float_out0_num   = num.irfftn(Z_num_float, axes=[0])
+    assert allclose_float(float_out0, float_out0_num)
+
+    float_out1       = np.fft.irfftn(Z_float, axes=[1])
+    float_out1_num   = num.irfftn(Z_num_float, axes=[1])
+    assert allclose_float(float_out1, float_out1_num)
+
+    float_out2       = np.fft.irfftn(Z_float, axes=[2])
+    float_out2_num   = num.irfftn(Z_num_float, axes=[2])
+    assert allclose_float(float_out2, float_out2_num)
+
+    float_out_minus1       = np.fft.irfftn(Z_float, axes=[-1])
+    float_out_minus1_num   = num.irfftn(Z_num_float, axes=[-1])
+    assert allclose_float(float_out_minus1, float_out_minus1_num)
+
+    float_out_minus2       = np.fft.irfftn(Z_float, axes=[-2])
+    float_out_minus2_num   = num.irfftn(Z_num_float, axes=[-2])
+    assert allclose_float(float_out_minus2, float_out_minus2_num)
+
+    float_out_minus5       = np.fft.irfftn(Z_float, axes=[-3])
+    float_out_minus5_num   = num.irfftn(Z_num_float, axes=[-3])
+    assert allclose_float(float_out_minus5, float_out_minus5_num)
+
+    float_out3       = np.fft.irfftn(Z_float, axes=[2, 1])
+    float_out3_num   = num.irfftn(Z_num_float, axes=[2, 1])
+    assert allclose_float(float_out3, float_out3_num)
+
+    float_out4       = np.fft.irfftn(Z_float, axes=[0, 2])
+    float_out4_num   = num.irfftn(Z_num_float, axes=[0, 2])
+    assert allclose_float(float_out4, float_out4_num)
+
+    float_out5       = np.fft.irfftn(Z_float, axes=[0, 2, 1, 1, -1])
+    float_out5_num   = num.irfftn(Z_num_float, axes=[0, 2, 1, 1, -1])
+    assert allclose_float(float_out5, float_out5_num)
 
 def test_1d_hfft():
     Z     = np.random.rand(1000) + np.random.rand(1000) * 1j
@@ -693,3 +805,6 @@ if __name__ == "__main__":
     print()
     print()
     test_3d_axes_r2c()
+
+    test_2d_axes_c2r()
+    test_3d_axes_c2r()

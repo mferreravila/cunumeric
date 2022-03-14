@@ -5403,7 +5403,26 @@ def irfftn(a, s=None, axes=None, norm=None):
         fft_type = FFTCode.FFT_C2R
     else:
         raise TypeError("FFT input not supported, missing a conversion")
-    return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)
+
+    s, axes = sanitize_s_axes(a, s, axes)
+    print('S {} AXES {} DIM {}'.format(s,axes, a.ndim))
+
+    operate_by_axes = (len(axes) != len(set(axes))) or (len(axes) != a.ndim)
+    if not operate_by_axes:
+        operate_by_axes = axes != sorted(axes)
+        
+    # Operate by axes
+    if operate_by_axes:
+        if len(axes) > 1:
+            c2r = a.fft(s=s[0:-1], axes=axes[0:-1], kind=real_to_complex_kind(fft_type), direction=FFTDirection.INVERSE, norm=norm)
+        else:
+            c2r = a
+        print('this')
+        print(c2r)
+        return c2r.fft(s=[s[-1]], axes=[axes[-1]], kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)
+    # Operate as a single FFT
+    else:
+        return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)
 
 @add_boilerplate("a")
 def hfft(a, n=None, axis=None, norm=None):

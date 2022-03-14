@@ -1346,7 +1346,7 @@ class ndarray(object):
         )
 
         fft_input._thunk.fft(out._thunk, fft_axes, kind, direction)
-
+        
         # Normalization
         fft_normalization = FFTNormalization.from_string(norm)
         do_normalization  = (fft_normalization == FFTNormalization.ORTHOGONAL)
@@ -1355,7 +1355,8 @@ class ndarray(object):
         if do_normalization:
             factor = 1
             norm_shape = fft_input.shape if direction == FFTDirection.FORWARD else out.shape
-            for i in norm_shape:
+            norm_shape_along_axes = [norm_shape[ax] for ax in fft_axes]
+            for i in norm_shape_along_axes:
                 factor *= i
             factor = np.sqrt(factor) if (fft_normalization == FFTNormalization.ORTHOGONAL) else factor
             return out * 1./factor

@@ -273,13 +273,17 @@ __host__ static inline void cufft_operation_by_axes_r2c(AccessorWO<OUTPUT_TYPE, 
       // For now, contiguous plan with a single batch
       int size_1d = n[*ax];
       // TODO: batches only correct for DIM <= 3. Fix for N-DIM case
-      int batches = (DIM == 3 && *ax == 1) ? n[2] : num_elements_in / n[*ax];
+      int batches = (type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? num_elements_in / n[*ax] : num_elements_out / n[*ax];
+      if (DIM == 3 && *ax == 1) {
+        batches = n[2];
+      }
       int istride = 1;
       int ostride = 1;
       for(int i = *ax+1; i < DIM; ++i) {
         istride *= fft_size_in[i];
         ostride *= fft_size_out[i];
       }
+
       int idist = (*ax == DIM-1) ? fft_size_in[*ax] : 1;
       int odist = (*ax == DIM-1) ? fft_size_out[*ax] : 1;
 
@@ -332,6 +336,9 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
     if(axes.size() != axes_set.size() || axes.size() != DIM) {
       // FFTs are computed as 1D over different axes. Slower than performing the full FFT in a single step
       if(FFT_TYPE == fftType::FFT_D2Z || FFT_TYPE == fftType::FFT_R2C) {
+        cufft_operation_by_axes_r2c<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
+      }
+      else if(FFT_TYPE == fftType::FFT_Z2D || FFT_TYPE == fftType::FFT_C2R) {
         cufft_operation_by_axes_r2c<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
       }
       else {
