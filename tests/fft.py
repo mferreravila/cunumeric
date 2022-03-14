@@ -29,36 +29,22 @@ def test_1d():
 
     out       = np.fft.fft(Z)
     out_num   = num.fft(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
-
     assert np.allclose(out, out_num)
 
 def test_1d_norm():
-    Z     = np.random.rand(10) + np.random.rand(10) * 1j
+    Z     = np.random.rand(1000000) + np.random.rand(1000000) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.fft(Z, norm='forward')
     out_num   = num.fft(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
-
     assert np.allclose(out, out_num)
 
 def test_1d_s():
-    Z     = np.random.rand(10) + np.random.rand(10) * 1j
+    Z     = np.random.rand(10000) + np.random.rand(10000) * 1j
     Z_num = num.array(Z)
 
-    out       = np.fft.fft(Z, n=5)
-    out_num   = num.fft(Z_num, n=5)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
+    out       = np.fft.fft(Z, n=5001)
+    out_num   = num.fft(Z_num, n=5001)
     assert np.allclose(out, out_num)
 
 def test_1d_larger_s():
@@ -76,11 +62,6 @@ def test_1d_inverse():
 
     out       = np.fft.ifft(Z, norm='forward')
     out_num   = num.ifft(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
-
     assert np.allclose(out, out_num)
 
 def test_1d_inverse_norm():
@@ -89,11 +70,6 @@ def test_1d_inverse_norm():
 
     out       = np.fft.ifft(Z)
     out_num   = num.ifft(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
-
     assert np.allclose(out, out_num)
 
 def test_1d_fp32():
@@ -111,10 +87,6 @@ def test_2d():
 
     out       = np.fft.fft2(Z)
     out_num   = num.fft2(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_norm():
@@ -123,10 +95,6 @@ def test_2d_norm():
 
     out       = np.fft.fft2(Z, norm='forward')
     out_num   = num.fft2(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_s():
@@ -135,10 +103,6 @@ def test_2d_s():
 
     out       = np.fft.fft2(Z,  s=(64,512))
     out_num   = num.fft2(Z_num, s=(64,512))
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_larger_s():
@@ -193,10 +157,6 @@ def test_2d_inverse():
 
     out       = np.fft.ifft2(Z, norm='forward')
     out_num   = num.ifft2(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_inverse_norm():
@@ -205,10 +165,6 @@ def test_2d_inverse_norm():
 
     out       = np.fft.ifft2(Z)
     out_num   = num.ifft2(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d():
@@ -217,10 +173,6 @@ def test_3d():
 
     out       = np.fft.fftn(Z)
     out_num   = num.fftn(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_norm():
@@ -229,10 +181,6 @@ def test_3d_norm():
 
     out       = np.fft.fftn(Z, norm='forward')
     out_num   = num.fftn(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_norm_ortho():
@@ -241,10 +189,6 @@ def test_3d_norm_ortho():
 
     out       = np.fft.fftn(Z, norm='ortho')
     out_num   = num.fftn(Z_num, norm='ortho')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_s():
@@ -253,10 +197,6 @@ def test_3d_s():
 
     out       = np.fft.fftn(Z, s=(63,20,99))
     out_num   = num.fftn(Z_num, s=(63,20,99))
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_larger_s():
@@ -265,10 +205,6 @@ def test_3d_larger_s():
 
     out       = np.fft.fftn(Z, s=(65,43,109))
     out_num   = num.fftn(Z_num, s=(65,43,109))
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_axes():
@@ -312,22 +248,12 @@ def test_3d_axes():
     assert num.allclose(Z, Z_num)
     assert num.allclose(out5, out5_num)
 
-    # print(Z)
-    # print('-----------------------------------------------------------------------')
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
-
 def test_3d_inverse():
     Z     = np.random.rand(64, 40, 100) + np.random.rand(64, 40, 100) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.ifftn(Z, norm='forward')
     out_num   = num.ifftn(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_inverse_norm():
@@ -336,10 +262,6 @@ def test_3d_inverse_norm():
 
     out       = np.fft.ifftn(Z)
     out_num   = num.ifftn(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_inverse_s():
@@ -348,10 +270,6 @@ def test_3d_inverse_s():
 
     out       = np.fft.ifftn(Z, s=(12,37,50), norm='forward')
     out_num   = num.ifftn(Z_num, s=(12,37,50),norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_1d_r2c():
@@ -360,14 +278,10 @@ def test_1d_r2c():
 
     out       = np.fft.rfft(Z)
     out_num   = num.rfft(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert np.allclose(out, out_num)
 
 def test_1d_fp32_r2c():
-    Z     = np.random.rand(10).astype(np.float32)
+    Z     = np.random.rand(198).astype(np.float32)
     Z_num = num.array(Z)
 
     out       = np.fft.rfft(Z)
@@ -379,30 +293,19 @@ def test_1d_fp32_r2c():
     assert l2 < 1e-6
 
 def test_1d_s_r2c():
-    Z     = np.random.rand(101)
+    Z     = np.random.rand(1010)
     Z_num = num.array(Z)
 
-    out       = np.fft.rfft(Z, n=11)
-    out_num   = num.rfft(Z_num, n=11)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
+    out       = np.fft.rfft(Z, n=110)
+    out_num   = num.rfft(Z_num, n=110)
     assert np.allclose(out, out_num)
 
 def test_2d_r2c ():
-    Z     = np.random.rand(4, 2)
+    Z     = np.random.rand(44, 29)
     Z_num = num.array(Z)
-    print('INPUT')
-    print(Z)
-    print()
 
     out       = np.fft.rfft2(Z)
     out_num   = num.rfft2(Z_num)
-
-    print(out)
-    print('-----------------------------------------------------------------------')
-    print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_s_r2c():
@@ -411,10 +314,6 @@ def test_2d_s_r2c():
 
     out       = np.fft.rfft2(Z,  s=(68,513))
     out_num   = num.rfft2(Z_num, s=(68,513))
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_axes_r2c():
@@ -455,7 +354,6 @@ def test_3d_r2c():
 
     out       = np.fft.rfftn(Z)
     out_num   = num.rfftn(Z_num)
-
     assert num.allclose(out, out_num)
 
 def test_3d_r2c_norm():
@@ -464,10 +362,6 @@ def test_3d_r2c_norm():
 
     out       = np.fft.rfftn(Z, norm='forward')
     out_num   = num.rfftn(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_s_r2c():
@@ -476,10 +370,6 @@ def test_3d_s_r2c():
 
     out       = np.fft.rfftn(Z, s=(63,21,99))
     out_num   = num.rfftn(Z_num, s=(63,21,99))
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_axes_r2c():
@@ -562,23 +452,15 @@ def test_3d_axes_r2c():
     float_out5_num   = num.rfftn(Z_num_float, axes=[0, 2, 1, 1, -1])
     assert allclose_float(float_out5, float_out5_num)
 
-    # print(Z)
-    # print('-----------------------------------------------------------------------')
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
-
 def test_1d_c2r():
     Z     = np.random.rand(1000) + np.random.rand(1000) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.irfft(Z, norm='forward')
     out_num   = num.irfft(Z_num, norm='forward')
-
     # print(out)
     # print('-----------------------------------------------------------------------')
     # print(out_num)
-
     assert np.allclose(out, out_num)
 
 def test_2d_c2r():
@@ -587,10 +469,6 @@ def test_2d_c2r():
 
     out       = np.fft.irfft2(Z, norm='forward')
     out_num   = num.irfft2(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_2d_axes_c2r():
@@ -631,10 +509,6 @@ def test_3d_c2r():
 
     out       = np.fft.irfftn(Z, norm='forward')
     out_num   = num.irfftn(Z_num, norm='forward')
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_c2r_norm():
@@ -643,10 +517,6 @@ def test_3d_c2r_norm():
 
     out       = np.fft.irfftn(Z)
     out_num   = num.irfftn(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert num.allclose(out, out_num)
 
 def test_3d_axes_c2r():
@@ -735,23 +605,14 @@ def test_1d_hfft():
 
     out       = np.fft.hfft(Z)
     out_num   = num.hfft(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
-
     assert np.allclose(out, out_num)
 
 def test_1d_hfft_inverse():
-    Z     = np.random.rand(10)
+    Z     = np.random.rand(100)
     Z_num = num.array(Z)
 
     out       = np.fft.ihfft(Z)
     out_num   = num.ihfft(Z_num)
-
-    # print(out)
-    # print('-----------------------------------------------------------------------')
-    # print(out_num)
     assert np.allclose(out, out_num)
 
 if __name__ == "__main__":
@@ -784,27 +645,16 @@ if __name__ == "__main__":
     test_1d_s_r2c()
     test_2d_r2c()
     test_2d_s_r2c()
+    test_2d_axes_r2c()
     test_3d_r2c()
     test_3d_r2c_norm()
     test_3d_s_r2c()
+    test_3d_axes_r2c()
     test_1d_c2r()
     test_2d_c2r()
+    test_2d_axes_c2r()
     test_3d_c2r()
+    test_3d_axes_c2r()
     test_3d_c2r_norm()
     test_1d_hfft()
     test_1d_hfft_inverse()
-
-    print()
-    print()
-    print()
-    print()
-    test_2d_axes_r2c()
-
-    print()
-    print()
-    print()
-    print()
-    test_3d_axes_r2c()
-
-    test_2d_axes_c2r()
-    test_3d_axes_c2r()

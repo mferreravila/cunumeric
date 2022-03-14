@@ -335,10 +335,7 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
     // More or less than one axis per dimension
     if(axes.size() != axes_set.size() || axes.size() != DIM) {
       // FFTs are computed as 1D over different axes. Slower than performing the full FFT in a single step
-      if(FFT_TYPE == fftType::FFT_D2Z || FFT_TYPE == fftType::FFT_R2C) {
-        cufft_operation_by_axes_r2c<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
-      }
-      else if(FFT_TYPE == fftType::FFT_Z2D || FFT_TYPE == fftType::FFT_C2R) {
+      if(FFT_TYPE != fftType::FFT_Z2Z && FFT_TYPE != fftType::FFT_C2C) {
         cufft_operation_by_axes_r2c<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
       }
       else {
