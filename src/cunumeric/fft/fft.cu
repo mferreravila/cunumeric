@@ -131,13 +131,13 @@ struct cufft_axes_plan<3, OUTPUT_TYPE, INPUT_TYPE>{
 // For now, it only supports up to 3D FFTs, but final plan is having support for
 // N-dimensional FFTs using this approach.
 template <int DIM, typename OUTPUT_TYPE, typename INPUT_TYPE>
-__host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
-                                                    AccessorRO<INPUT_TYPE, DIM> in,
-                                                    const Rect<DIM>& out_rect,
-                                                    const Rect<DIM>& in_rect,
-                                                    std::vector<int64_t>& axes,
-                                                    fftType type,
-                                                    fftDirection direction)
+__host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
+                                            AccessorRO<INPUT_TYPE, DIM> in,
+                                            const Rect<DIM>& out_rect,
+                                            const Rect<DIM>& in_rect,
+                                            std::vector<int64_t>& axes,
+                                            fftType type,
+                                            fftDirection direction)
 {
     cudaStream_t stream;
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
@@ -146,7 +146,6 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
     int n[DIM];
     int inembed[DIM];
     int onembed[DIM];
-    // raise(SIGINT);
 
     const Point<DIM> zero   = Point<DIM>::ZEROES();
     const Point<DIM> one    = Point<DIM>::ONES();
@@ -218,13 +217,13 @@ __host__ static inline void cufft_operation_by_axes(AccessorWO<OUTPUT_TYPE, DIM>
 
 // Perform the FFT operation as multiple 1D FFTs along the specified axes, single R2C/C2R operation
 template <int DIM, typename OUTPUT_TYPE, typename INPUT_TYPE>
-__host__ static inline void cufft_operation_by_axes_r2c(AccessorWO<OUTPUT_TYPE, DIM> out,
-                                                        AccessorRO<INPUT_TYPE, DIM> in,
-                                                        const Rect<DIM>& out_rect,
-                                                        const Rect<DIM>& in_rect,
-                                                        std::vector<int64_t>& axes,
-                                                        fftType type,
-                                                        fftDirection direction)
+__host__ static inline void cufft_over_axes_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM> out,
+                                                    AccessorRO<INPUT_TYPE, DIM> in,
+                                                    const Rect<DIM>& out_rect,
+                                                    const Rect<DIM>& in_rect,
+                                                    std::vector<int64_t>& axes,
+                                                    fftType type,
+                                                    fftDirection direction)
 {
     cudaStream_t stream;
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
@@ -242,7 +241,7 @@ __host__ static inline void cufft_operation_by_axes_r2c(AccessorWO<OUTPUT_TYPE, 
     size_t num_elements_in  = 1;
     size_t num_elements_out = 1;
     for(int i = 0; i < DIM; ++i) {
-      n[i]          = (type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? fft_size_in[i] : fft_size_out[i];
+      n[i]          = (direction == fftDirection::FFT_FORWARD) ? fft_size_in[i] : fft_size_out[i];
       inembed[i]    = fft_size_in[i];
       onembed[i]    = fft_size_out[i];
       num_elements_in  *= fft_size_in[i];
@@ -260,29 +259,27 @@ __host__ static inline void cufft_operation_by_axes_r2c(AccessorWO<OUTPUT_TYPE, 
                                                   Memory::GPU_FB_MEM,
                                                   nullptr /*initial*/,
                                                   128 /*alignment*/);
-
-    auto ax = axes.begin();
-
     // Create the plan
     cufftHandle plan;
     CHECK_CUFFT(cufftCreate(&plan));
     CHECK_CUFFT(cufftSetAutoAllocation(plan, 0 /*we'll do the allocation*/));
     CHECK_CUFFT(cufftSetStream(plan, stream));
 
-    // Batched 1D dimensions
-    // TODO: batches only correct for DIM <= 3. Fix for N-DIM case
+    // Operate over the R2C or C2R axes, which is the first one
+    auto ax = axes.begin();
+
+    // Batched 1D dimension
     int size_1d = n[*ax];
-    int batches = (type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? num_elements_in / n[*ax] : num_elements_out / n[*ax];
-    if (DIM == 3 && *ax == 1) {
-      batches = n[2];
-    }
+    // TODO: batch only correct for DIM <= 3. Fix for N-DIM case
+    int batches = (direction == fftDirection::FFT_FORWARD) ? num_elements_in : num_elements_out;
+        batches = (DIM == 3 && *ax == 1) ? n[2] : batches / n[*ax];
     int istride = 1;
     int ostride = 1;
     for(int i = *ax+1; i < DIM; ++i) {
       istride *= fft_size_in[i];
       ostride *= fft_size_out[i];
     }
-    int idist = (*ax == DIM-1) ? fft_size_in[*ax] : 1;
+    int idist = (*ax == DIM-1) ? fft_size_in[*ax]  : 1;
     int odist = (*ax == DIM-1) ? fft_size_out[*ax] : 1;
 
     // Create the plan and allocate a temporary buffer for it if it needs one
@@ -330,11 +327,11 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
     if(operate_over_axes) {
       // R2C / C2R always only 1D on a single axis (when performed over axes)
       if(FFT_TYPE != fftType::FFT_Z2Z && FFT_TYPE != fftType::FFT_C2C) {
-        cufft_operation_by_axes_r2c<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
+        cufft_over_axes_r2c_c2r<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);
       }
       // C2C can be multiple 1D dimensions over axes
       else {
-        cufft_operation_by_axes<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);        
+        cufft_over_axes<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);        
       }
     }
     // If we have one axis per dimension, then it can be done as a single operation (more performant)
