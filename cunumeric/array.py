@@ -2196,7 +2196,18 @@ class ndarray(object):
         """
         return self.__array__().dumps()
 
+    def sanitize_s_axes(self, s, axes):
+        if s is None:
+            if axes is None:
+                s = list(self.shape)
+            else:
+                s = [list(self.shape)[ax] for ax in axes]
+        if axes is None:
+            axes = list(range(0, len(s)))
+        return s, axes
+
     def fft(self, s, axes, kind, direction, norm):
+        # Dimensions
         if self.ndim > 3:
             raise NotImplementedError(
                 f"{self.ndim}-D arrays are not supported yet"
@@ -2213,39 +2224,55 @@ class ndarray(object):
         elif kind == FFTCode.FFT_C2R:
             fft_output_type = np.float32
 
+        # Axes and sizes
+        fft_axes = None
+        if axes is None:
+            fft_axes = list(range(-len(s),0)) if s is not None else list(range(self.ndim))
+        else:
+            fft_axes = axes
+        fft_axes = [x % self.ndim for x in fft_axes]
+
+        fft_s = list(self.shape)
+        if s is not None:
+            for idx, ax in enumerate(fft_axes):
+                fft_s[ax] = s[idx]
+
         # Shape
-        fft_input = self
+        fft_input        = self
         fft_output_shape = self.shape
         if s is not None:
             zero_padded_input = self
-            if np.any(np.greater(s, self.shape)):
-                max_size = tuple(np.maximum(s,self.shape))
-                zero_padded_input = ndarray(shape=max_size, dtype=self.dtype)
+            if np.any(np.greater(fft_s, fft_input.shape)):
+                # Create array with superset shape, fill with zeros, and copy input in
+                max_size = tuple(np.maximum(fft_s,fft_input.shape))
+                zero_padded_input = ndarray(shape=max_size, dtype=fft_input.dtype)
                 zero_padded_input.fill(0)
-                zero_padded_input._thunk.set_item(tuple(slice(0,i) for i in self.shape), self._thunk)
-            fft_input  = ndarray(shape=s, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in s)))
-            fft_output_shape  = s
-        # User axes
-        fft_axes = None
-        if axes is not None:
-            fft_axes = [x % self.ndim for x in axes]
-            fft_axes.reverse()
-        # R2C / C2R require different output shapes
-        if fft_output_type != self.dtype:
-            if fft_axes is None:
-                fft_output_shape = list(fft_output_shape)
-                if direction == FFTDirection.FORWARD:
-                    fft_output_shape[-1] = fft_output_shape[-1]//2 + 1
-                else:
-                    fft_output_shape[-1] = 2 * (self.shape[-1] - 1)
-                fft_output_shape = tuple(fft_output_shape)
+                zero_padded_input._thunk.set_item(tuple(slice(0,i) for i in fft_input.shape), fft_input._thunk)
 
+            fft_input_shape = fft_input.shape
+            if fft_axes is not None:
+                fft_input_shape = list(fft_input_shape)
+                for idx, ax in enumerate(fft_axes):
+                    fft_input_shape[ax] = s[idx]
+                fft_input_shape = tuple(fft_input_shape)
+            fft_input  = ndarray(shape=fft_input_shape, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in fft_s))).copy()
+            fft_output_shape = fft_input_shape
+
+        # R2C/C2R require different output shapes
+        if fft_output_type != self.dtype:
+            fft_output_shape = list(fft_output_shape)
+            # R2C/C2R dimension is the last axis
+            r_ax = -1 if fft_axes is None else fft_axes[-1]
+            if direction == FFTDirection.FORWARD:
+                fft_output_shape[r_ax] = fft_output_shape[r_ax]//2 + 1
+            else:
+                fft_output_shape[r_ax] = s[-1] if s is not None else 2 * (fft_input.shape[r_ax] - 1)
+            fft_output_shape = tuple(fft_output_shape)
 
         # Execute FFT backend
         out = ndarray(
             shape=fft_output_shape,
             dtype=fft_output_type,
-            inputs=(self,)
         )
         fft_input._thunk.fft(out._thunk, fft_axes, kind, direction)
 
@@ -2257,7 +2284,8 @@ class ndarray(object):
         if do_normalization:
             factor = 1
             norm_shape = fft_input.shape if direction == FFTDirection.FORWARD else out.shape
-            for i in norm_shape:
+            norm_shape_along_axes = [norm_shape[ax] for ax in fft_axes]
+            for i in norm_shape_along_axes:
                 factor *= i
             factor = np.sqrt(factor) if (fft_normalization == FFTNormalization.ORTHOGONAL) else factor
             return out * 1./factor

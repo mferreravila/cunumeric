@@ -13,23 +13,10 @@
 # limitations under the License.
 #
 
-"""
-cuNumeric
-=====
-
-Provides a distributed task-parallel implementation of the Numpy interface
-with GPU acceleration.
-
-:meta private:
-"""
-
 import sys as _sys
 
-import numpy as _np
-from cunumeric import linalg, random, fft
-from cunumeric.array import ndarray
-from cunumeric.module import *
-from cunumeric.ufunc import *
+import numpy.fft as _npfft
+from cunumeric.fft.fft import *
 from cunumeric.coverage import (
     add_missing_attributes as _add_missing_attributes,
 )
@@ -37,7 +24,6 @@ from cunumeric.coverage import (
 _thismodule = _sys.modules[__name__]
 
 # map any undefined attributes to numpy
-_add_missing_attributes(_np, _thismodule)
+_add_missing_attributes(_npfft, _thismodule)
 
-# Remote this method from the scope
 del _add_missing_attributes

@@ -26,8 +26,8 @@ struct FFTArgs {
   Array            input;
   fftType          type;
   fftDirection     direction;
+  bool             operate_over_axes;
   std::vector<int64_t> axes;
-  // Legion::Domain root_domain;
 };
 
 class FFTTask : public CuNumericTask<FFTTask> {
