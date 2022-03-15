@@ -118,14 +118,17 @@ def rfft2(a, s=None, axes=(-2,-1), norm=None):
 
 @add_boilerplate("a")
 def rfftn(a, s=None, axes=None, norm=None):
-    # Check for types, no conversions for now
+    # Convert to real if complex
+    if a.dtype != np.float32 and a.dtype != np.float64:
+        a = a.real
+    # Check for types
     fft_type = None
     if a.dtype == np.float64:
         fft_type = FFTCode.FFT_D2Z
     elif a.dtype == np.float32:
         fft_type = FFTCode.FFT_R2C
     else:
-        raise TypeError("FFT input not supported, missing a conversion")
+        raise TypeError("FFT input not supported (missing a conversion?)")
 
     s, axes = _sanitize_user_axes(a, s, axes)
     operate_by_axes = (len(axes) != len(set(axes))) or (len(axes) != a.ndim)
@@ -158,6 +161,11 @@ def irfft2(a, s=None, axes=(-2,-1), norm=None):
 
 @add_boilerplate("a")
 def irfftn(a, s=None, axes=None, norm=None):
+    # Convert to complex if real
+    if a.dtype == np.float32:
+        a = a.astype(np.complex64)
+    elif a.dtype == np.float64:
+        a = a.astype(np.complex128)
     # Check for types, no conversions for now
     fft_type = None
     if a.dtype == np.complex128:

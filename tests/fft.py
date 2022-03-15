@@ -27,7 +27,7 @@ def allclose(A, B):
         return np.allclose(A, B)
 
 def test_1d(dtype=np.float64):
-    Z     = np.random.rand(10).astype(dtype) + np.random.rand(10).astype(dtype) * 1j
+    Z     = np.random.rand(1000001).astype(dtype) + np.random.rand(1000001).astype(dtype) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.fft(Z)
@@ -47,6 +47,13 @@ def test_1d(dtype=np.float64):
     assert allclose(out, out_num)
     out       = np.fft.ifft(Z)
     out_num   = num.fft.ifft(Z_num)
+    assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.rfft(Z)
+    out_num   = num.fft.rfft(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.ihfft(Z)
+    out_num   = num.fft.ihfft(Z_num)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -125,6 +132,13 @@ def test_2d(dtype=np.float64):
     assert allclose(out, out_num)
     out       = np.fft.ifft2(Z, axes=[1, 0, 1])
     out_num   = num.fft.ifft2(Z_num, axes=[1, 0, 1])
+    assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.rfft2(Z)
+    out_num   = num.fft.rfft2(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.ihfft(Z)
+    out_num   = num.fft.ihfft(Z_num)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -216,6 +230,13 @@ def test_3d(dtype=np.float64):
     out       = np.fft.ifftn(Z, axes=[0, 2, 1, 1, -1])
     out_num   = num.fft.ifftn(Z_num, axes=[0, 2, 1, 1, -1])
     assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.rfftn(Z)
+    out_num   = num.fft.rfftn(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.ihfft(Z)
+    out_num   = num.fft.ihfft(Z_num)
+    assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
 def test_1d_r2c(dtype=np.float64):
@@ -233,6 +254,13 @@ def test_1d_r2c(dtype=np.float64):
     assert allclose(out, out_num)
     out       = np.fft.rfft(Z, n=1001001)
     out_num   = num.fft.rfft(Z_num, n=1001001)
+    assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.irfft(Z)
+    out_num   = num.fft.irfft(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.hfft(Z)
+    out_num   = num.fft.hfft(Z_num)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -275,6 +303,13 @@ def test_2d_r2c(dtype=np.float64):
     assert allclose(out, out_num)
     out       = np.fft.rfft2(Z, axes=[1, 0, 1])
     out_num   = num.fft.rfft2(Z_num, axes=[1, 0, 1])
+    assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.irfft2(Z)
+    out_num   = num.fft.irfft2(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.hfft(Z)
+    out_num   = num.fft.hfft(Z_num)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -324,10 +359,17 @@ def test_3d_r2c(dtype=np.float64):
     out       = np.fft.rfftn(Z, axes=[0, 2, 1, 1, -1])
     out_num   = num.fft.rfftn(Z_num, axes=[0, 2, 1, 1, -1])
     assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.irfftn(Z)
+    out_num   = num.fft.irfftn(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.hfft(Z)
+    out_num   = num.fft.hfft(Z_num)
+    assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
 def test_1d_c2r(dtype=np.float64):
-    Z     = np.random.rand(101).astype(dtype) + np.random.rand(101).astype(dtype) * 1j
+    Z     = np.random.rand(1000001).astype(dtype) + np.random.rand(1000001).astype(dtype) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.irfft(Z)
@@ -341,6 +383,13 @@ def test_1d_c2r(dtype=np.float64):
     assert allclose(out, out_num)
     out       = np.fft.irfft(Z, n=1001001)
     out_num   = num.fft.irfft(Z_num, n=1001001)
+    assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.rfft(Z)
+    out_num   = num.fft.rfft(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.ihfft(Z)
+    out_num   = num.fft.ihfft(Z_num)
     assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
@@ -384,10 +433,17 @@ def test_2d_c2r(dtype=np.float64):
     out       = np.fft.irfft2(Z, axes=[1, 0, 1])
     out_num   = num.fft.irfft2(Z_num, axes=[1, 0, 1])
     assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.rfft2(Z)
+    out_num   = num.fft.rfft2(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.ihfft(Z)
+    out_num   = num.fft.ihfft(Z_num)
+    assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
 def test_3d_c2r(dtype=np.float64):
-    Z     = np.random.rand(64, 40, 100).astype(dtype) + np.random.rand(64, 40, 100).astype(dtype) * 1j
+    Z     = np.random.rand(32, 40, 85).astype(dtype) + np.random.rand(32, 40, 85).astype(dtype) * 1j
     Z_num = num.array(Z)
 
     out       = np.fft.irfftn(Z)
@@ -399,11 +455,11 @@ def test_3d_c2r(dtype=np.float64):
     out       = np.fft.irfftn(Z, norm='ortho')
     out_num   = num.fft.irfftn(Z_num, norm='ortho')
     assert allclose(out, out_num)
-    out       = np.fft.irfftn(Z, s=(63,20,99))
-    out_num   = num.fft.irfftn(Z_num, s=(63,20,99))
+    out       = np.fft.irfftn(Z, s=(31,20,79))
+    out_num   = num.fft.irfftn(Z_num, s=(31,20,79))
     assert allclose(out, out_num)
-    out       = np.fft.irfftn(Z, s=(65,43,109))
-    out_num   = num.fft.irfftn(Z_num, s=(65,43,109))
+    out       = np.fft.irfftn(Z, s=(35,43,90))
+    out_num   = num.fft.irfftn(Z_num, s=(35,43,90))
     assert allclose(out, out_num)
     out       = np.fft.irfftn(Z, axes=[0])
     out_num   = num.fft.irfftn(Z_num, axes=[0])
@@ -432,6 +488,13 @@ def test_3d_c2r(dtype=np.float64):
     out       = np.fft.irfftn(Z, axes=[0, 2, 1, 1, -1])
     out_num   = num.fft.irfftn(Z_num, axes=[0, 2, 1, 1, -1])
     assert allclose(out, out_num)
+    # Odd types
+    out       = np.fft.rfftn(Z)
+    out_num   = num.fft.rfftn(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.ihfft(Z)
+    out_num   = num.fft.ihfft(Z_num)
+    assert allclose(out, out_num)
     assert allclose(Z, Z_num)
 
 def test_1d_hfft(dtype=np.float64):
@@ -444,7 +507,7 @@ def test_1d_hfft(dtype=np.float64):
     assert allclose(Z, Z_num)
 
 def test_1d_hfft_inverse(dtype=np.float64):
-    Z     = np.random.rand(100).astype(dtype)
+    Z     = np.random.rand(1000).astype(dtype)
     Z_num = num.array(Z)
 
     out       = np.fft.ihfft(Z)
