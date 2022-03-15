@@ -19,14 +19,20 @@ from cunumeric.module import add_boilerplate
 from cunumeric.config import FFTCode, FFTDirection, FFTNormalization
 
 
-def _sanitize_user_axes(a, s, axes):
+def _sanitize_user_axes(a, s, axes, is_c2r=False):
     if s is None:
+        user_shape = False
         if axes is None:
             s = list(a.shape)
         else:
             s = [list(a.shape)[ax] for ax in axes]
+    else:
+        user_shape = True
+        s = list(s)
     if axes is None:
         axes = list(range(-len(s), 0))
+    if is_c2r and not user_shape:
+        s[-1] = 2 * (a.shape[axes[-1]] - 1)
     return s, axes
 
 
@@ -120,12 +126,10 @@ def rfftn(a, s=None, axes=None, norm=None):
         raise TypeError("FFT input not supported, missing a conversion")
 
     s, axes = _sanitize_user_axes(a, s, axes)
-    print('S {} AXES {} DIM {}'.format(s,axes, a.ndim))
-
     operate_by_axes = (len(axes) != len(set(axes))) or (len(axes) != a.ndim)
     if not operate_by_axes:
         operate_by_axes = axes != sorted(axes)
-        
+
     # Operate by axes
     if operate_by_axes:
         r2c = a.fft(s=[s[-1]], axes=[axes[-1]], kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
@@ -160,9 +164,7 @@ def irfftn(a, s=None, axes=None, norm=None):
     else:
         raise TypeError("FFT input not supported, missing a conversion")
 
-    s, axes = _sanitize_user_axes(a, s, axes)
-    print('S {} AXES {} DIM {}'.format(s,axes, a.ndim))
-
+    s, axes = _sanitize_user_axes(a, s, axes, is_c2r=True)
     operate_by_axes = (len(axes) != len(set(axes))) or (len(axes) != a.ndim)
     if not operate_by_axes:
         operate_by_axes = axes != sorted(axes)
