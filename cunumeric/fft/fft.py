@@ -45,13 +45,14 @@ def _real_to_complex_kind(fft_type):
 
 
 @add_boilerplate("a")
-def fft(a, n=None, axis=None, norm=None):
+def fft(a, n=None, axis=-1, norm=None):
     s = (n,) if n is not None else None
+    axis = (axis,) if axis is not None else None
     return fftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
-def fft2(a, s=None, axes=None, norm=None):
+def fft2(a, s=None, axes=(-2,-1), norm=None):
     return fftn(a=a, s=s, axes=axes, norm=norm)
 
 
@@ -73,13 +74,14 @@ def fftn(a, s=None, axes=None, norm=None):
 
 
 @add_boilerplate("a")
-def ifft(a, n=None, axis=None, norm=None):
+def ifft(a, n=None, axis=-1, norm=None):
     s = (n,) if n is not None else None
+    axis = (axis,) if axis is not None else None
     return ifftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
-def ifft2(a, s=None, axes=None, norm=None):
+def ifft2(a, s=None, axes=(-2,-1), norm=None):
     # Ensure 2D
     return ifftn(a=a, s=s, axes=axes, norm=norm)
 
@@ -103,14 +105,14 @@ def ifftn(a, s=None, axes=None, norm=None):
 
 
 @add_boilerplate("a")
-def rfft(a, n=None, axis=None, norm=None):
+def rfft(a, n=None, axis=-1, norm=None):
     s = (n,) if n is not None else None
     axis = (axis,) if axis is not None else None
     return rfftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
-def rfft2(a, s=None, axes=None, norm=None):
+def rfft2(a, s=None, axes=(-2,-1), norm=None):
     return rfftn(a=a, s=s, axes=axes, norm=norm)
 
 
@@ -143,13 +145,14 @@ def rfftn(a, s=None, axes=None, norm=None):
 
 
 @add_boilerplate("a")
-def irfft(a, n=None, axis=None, norm=None):
+def irfft(a, n=None, axis=-1, norm=None):
     s = (n,) if n is not None else None
+    axis = (axis,) if axis is not None else None
     return irfftn(a=a, s=s, axes=axis, norm=norm)
 
 
 @add_boilerplate("a")
-def irfft2(a, s=None, axes=None, norm=None):
+def irfft2(a, s=None, axes=(-2,-1), norm=None):
     return irfftn(a=a, s=s, axes=axes, norm=norm)
 
 
@@ -184,16 +187,18 @@ def irfftn(a, s=None, axes=None, norm=None):
 
 
 @add_boilerplate("a")
-def hfft(a, n=None, axis=None, norm=None):
+def hfft(a, n=None, axis=-1, norm=None):
     s = (n,) if n is not None else None
+    axis = (axis,) if axis is not None else None
     # Add checks to ensure input is hermitian?
     # Essentially a C2R FFT, with reverse sign (forward transform, forward norm)
     return irfftn(a=a.conjugate(), s=s, axes=axis, norm=FFTNormalization.reverse(norm))
 
 
 @add_boilerplate("a")
-def ihfft(a, n=None, axis=None, norm=None):
+def ihfft(a, n=None, axis=-1, norm=None):
     s = (n,) if n is not None else None
+    axis = (axis,) if axis is not None else None
     # Add checks to ensure input is hermitian?
     # Essentially a R2C FFT, with reverse sign (inverse transform, inverse norm)
     return rfftn(a=a, s=s, axes=axis, norm=FFTNormalization.reverse(norm)).conjugate()
