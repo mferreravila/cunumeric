@@ -2217,7 +2217,6 @@ class ndarray(object):
         # Axes and sizes
         user_axes  = axes is not None
         user_sizes = s is not None
-        fft_axes = None
         if not user_axes:
             fft_axes = list(range(-len(s),0)) if user_sizes else list(range(self.ndim))
         else:
@@ -2233,6 +2232,7 @@ class ndarray(object):
         fft_input        = self
         fft_output_shape = self.shape
         if user_sizes:
+            # Zero padding if any of the user sizes is larger than input
             zero_padded_input = self
             if np.any(np.greater(fft_s, fft_input.shape)):
                 # Create array with superset shape, fill with zeros, and copy input in
@@ -2241,12 +2241,11 @@ class ndarray(object):
                 zero_padded_input.fill(0)
                 zero_padded_input._thunk.set_item(tuple(slice(0,i) for i in fft_input.shape), fft_input._thunk)
 
-            fft_input_shape = fft_input.shape
-            if fft_axes is not None:
-                fft_input_shape = list(fft_input_shape)
-                for idx, ax in enumerate(fft_axes):
-                    fft_input_shape[ax] = s[idx]
-                fft_input_shape = tuple(fft_input_shape)
+            # Slicing according to final shape
+            fft_input_shape = list(fft_input.shape)
+            for idx, ax in enumerate(fft_axes):
+                fft_input_shape[ax] = s[idx]
+            fft_input_shape = tuple(fft_input_shape)
             fft_input  = ndarray(shape=fft_input_shape, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in fft_s))).copy()
             fft_output_shape = fft_input_shape
 
@@ -2254,11 +2253,10 @@ class ndarray(object):
         if fft_output_type != self.dtype:
             fft_output_shape = list(fft_output_shape)
             # R2C/C2R dimension is the last axis
-            r_ax = -1 if fft_axes is None else fft_axes[-1]
             if direction == FFTDirection.FORWARD:
-                fft_output_shape[r_ax] = fft_output_shape[r_ax]//2 + 1
+                fft_output_shape[fft_axes[-1]] = fft_output_shape[fft_axes[-1]]//2 + 1
             else:
-                fft_output_shape[r_ax] = s[-1] if user_sizes else 2 * (fft_input.shape[r_ax] - 1)
+                fft_output_shape[fft_axes[-1]] = s[-1] if user_sizes else 2 * (fft_input.shape[fft_axes[-1]] - 1)
             fft_output_shape = tuple(fft_output_shape)
 
         # Execute FFT backend

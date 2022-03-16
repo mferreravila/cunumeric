@@ -205,12 +205,8 @@ def fftn(a, s=None, axes=None, norm=None):
         fft_type = FFTCode.FFT_Z2Z
     elif a.dtype == np.complex64:
         fft_type = FFTCode.FFT_C2C
-    elif a.dtype == np.float64:
-        fft_type = FFTCode.FFT_D2Z
-    elif a.dtype == np.float32:
-        fft_type = FFTCode.FFT_R2C
     else:
-        raise TypeError("FFT input not supported, missing a conversion")
+        raise TypeError("FFT input not supported (missing a conversion?)")
     return a.fft(s=s, axes=axes, kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
 
 
