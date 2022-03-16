@@ -195,6 +195,11 @@ def fftn(a, s=None, axes=None, norm=None):
     --------
     GPU
     """
+    if a.dtype == np.float32:
+        a = a.astype(np.complex64)
+    elif a.dtype == np.float64:
+        a = a.astype(np.complex128)
+
     fft_type = None
     if a.dtype == np.complex128:
         fft_type = FFTCode.FFT_Z2Z
@@ -500,7 +505,7 @@ def rfft2(a, s=None, axes=(-2,-1), norm=None):
 
 @add_boilerplate("a")
 def rfftn(a, s=None, axes=None, norm=None):
-   """
+    """
     Compute the N-dimensional discrete Fourier Transform for real input.
 
     This function computes the N-dimensional discrete Fourier Transform over

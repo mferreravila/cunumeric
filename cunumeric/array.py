@@ -2196,18 +2196,8 @@ class ndarray(object):
         """
         return self.__array__().dumps()
 
-    def sanitize_s_axes(self, s, axes):
-        if s is None:
-            if axes is None:
-                s = list(self.shape)
-            else:
-                s = [list(self.shape)[ax] for ax in axes]
-        if axes is None:
-            axes = list(range(0, len(s)))
-        return s, axes
-
     def fft(self, s, axes, kind, direction, norm):
-        # Dimensions
+        # Dimensions check
         if self.ndim > 3:
             raise NotImplementedError(
                 f"{self.ndim}-D arrays are not supported yet"
@@ -2225,22 +2215,24 @@ class ndarray(object):
             fft_output_type = np.float32
 
         # Axes and sizes
+        user_axes  = axes is not None
+        user_sizes = s is not None
         fft_axes = None
-        if axes is None:
-            fft_axes = list(range(-len(s),0)) if s is not None else list(range(self.ndim))
+        if not user_axes:
+            fft_axes = list(range(-len(s),0)) if user_sizes else list(range(self.ndim))
         else:
             fft_axes = axes
         fft_axes = [x % self.ndim for x in fft_axes]
 
         fft_s = list(self.shape)
-        if s is not None:
+        if user_sizes:
             for idx, ax in enumerate(fft_axes):
                 fft_s[ax] = s[idx]
 
         # Shape
         fft_input        = self
         fft_output_shape = self.shape
-        if s is not None:
+        if user_sizes:
             zero_padded_input = self
             if np.any(np.greater(fft_s, fft_input.shape)):
                 # Create array with superset shape, fill with zeros, and copy input in
@@ -2266,7 +2258,7 @@ class ndarray(object):
             if direction == FFTDirection.FORWARD:
                 fft_output_shape[r_ax] = fft_output_shape[r_ax]//2 + 1
             else:
-                fft_output_shape[r_ax] = s[-1] if s is not None else 2 * (fft_input.shape[r_ax] - 1)
+                fft_output_shape[r_ax] = s[-1] if user_sizes else 2 * (fft_input.shape[r_ax] - 1)
             fft_output_shape = tuple(fft_output_shape)
 
         # Execute FFT backend

@@ -14,6 +14,7 @@
 #
 
 import numpy as np
+import warnings
 import scipy.signal as sig
 
 import cunumeric as num
@@ -49,6 +50,7 @@ def test_1d(dtype=np.float64):
     out_num   = num.fft.ifft(Z_num)
     assert allclose(out, out_num)
     # Odd types
+    warnings.filterwarnings(action='ignore', category=np.ComplexWarning)
     out       = np.fft.rfft(Z)
     out_num   = num.fft.rfft(Z_num)
     assert allclose(out, out_num)
