@@ -360,6 +360,12 @@ def test_3d_r2c(dtype=np.float64):
     out_num   = num.fft.rfftn(Z_num, axes=[0, 2, 1, 1, -1])
     assert allclose(out, out_num)
     # Odd types
+    out       = np.fft.fftn(Z)
+    out_num   = num.fft.fftn(Z_num)
+    assert allclose(out, out_num)
+    out       = np.fft.ifftn(Z)
+    out_num   = num.fft.ifftn(Z_num)
+    assert allclose(out, out_num)
     out       = np.fft.irfftn(Z)
     out_num   = num.fft.irfftn(Z_num)
     assert allclose(out, out_num)
@@ -516,6 +522,7 @@ def test_1d_hfft_inverse(dtype=np.float64):
     assert allclose(Z, Z_num)
 
 if __name__ == "__main__":
+    # Keep errors reproducible
     np.random.seed(0)
     print('=== 1D double                   ===')
     test_1d()
