@@ -215,6 +215,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
       CHECK_CUFFT(cufftDestroy(plan));
     }
     CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), input_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaStreamSynchronize(stream));
     CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
@@ -305,7 +306,8 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
     CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), output_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
 
     // Clean up our resources, DeferredBuffers are cleaned up by Legion
-    CHECK_CUFFT(cufftDestroy(plan));    
+    CHECK_CUFFT(cufftDestroy(plan));
+    CHECK_CUDA(cudaStreamSynchronize(stream));
     CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
