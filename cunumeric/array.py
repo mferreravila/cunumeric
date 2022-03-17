@@ -2196,6 +2196,28 @@ class ndarray(object):
         """
         return self.__array__().dumps()
 
+    def _normalize_axes_shape(self, axes, s):
+        user_axes  = axes is not None
+        user_sizes = s is not None
+        if user_axes and user_sizes and len(axes) != len(s):
+            raise ValueError(
+                "Shape and axes have different lengths"
+                )
+        if user_axes:
+            fft_axes = axes
+        else:
+            fft_axes = range(-len(s),0) if user_sizes else range(self.ndim)
+        if np.max(np.abs(list(fft_axes))) > self.ndim:
+            raise ValueError(
+                "Axis is out of bounds for array of size {}".format(self.ndim)
+            )
+        fft_axes = [x % self.ndim for x in fft_axes]
+        fft_s    = list(self.shape)
+        if user_sizes:
+            for idx, ax in enumerate(fft_axes):
+                fft_s[ax] = s[idx]
+        return fft_axes, fft_s
+
     def fft(self, s, axes, kind, direction, norm):
         # Dimensions check
         if self.ndim > 3:
@@ -2204,29 +2226,12 @@ class ndarray(object):
             )
 
         # Type
-        fft_output_type = self.dtype
-        if kind == FFTCode.FFT_D2Z:
-            fft_output_type = np.complex128
-        elif kind == FFTCode.FFT_R2C:
-            fft_output_type = np.complex64
-        elif kind == FFTCode.FFT_Z2D:
-            fft_output_type = np.float64
-        elif kind == FFTCode.FFT_C2R:
-            fft_output_type = np.float32
+        fft_output_type = kind.output_dtype
 
         # Axes and sizes
         user_axes  = axes is not None
         user_sizes = s is not None
-        if not user_axes:
-            fft_axes = list(range(-len(s),0)) if user_sizes else list(range(self.ndim))
-        else:
-            fft_axes = axes
-        fft_axes = [x % self.ndim for x in fft_axes]
-
-        fft_s = list(self.shape)
-        if user_sizes:
-            for idx, ax in enumerate(fft_axes):
-                fft_s[ax] = s[idx]
+        fft_axes, fft_s = self._normalize_axes_shape(axes, s)
 
         # Shape
         fft_input        = self
@@ -2268,15 +2273,15 @@ class ndarray(object):
 
         # Normalization
         fft_normalization = FFTNormalization.from_string(norm)
-        do_normalization  = (fft_normalization == FFTNormalization.ORTHOGONAL)
-        do_normalization  = do_normalization or (fft_normalization == FFTNormalization.FORWARD and direction == FFTDirection.FORWARD)
-        do_normalization  = do_normalization or (fft_normalization == FFTNormalization.INVERSE and direction == FFTDirection.INVERSE)
+        do_normalization  = any([
+                                fft_normalization == FFTNormalization.ORTHOGONAL,
+                                fft_normalization == FFTNormalization.FORWARD and direction == FFTDirection.FORWARD,
+                                fft_normalization == FFTNormalization.INVERSE and direction == FFTDirection.INVERSE
+                                ])
         if do_normalization:
-            factor = 1
             norm_shape = fft_input.shape if direction == FFTDirection.FORWARD else out.shape
             norm_shape_along_axes = [norm_shape[ax] for ax in fft_axes]
-            for i in norm_shape_along_axes:
-                factor *= i
+            factor = np.product(norm_shape_along_axes)
             factor = np.sqrt(factor) if (fft_normalization == FFTNormalization.ORTHOGONAL) else factor
             return out * 1./factor
 

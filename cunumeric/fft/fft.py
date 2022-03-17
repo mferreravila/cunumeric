@@ -25,7 +25,7 @@ def _sanitize_user_axes(a, s, axes, is_c2r=False):
         if axes is None:
             s = list(a.shape)
         else:
-            s = [list(a.shape)[ax] for ax in axes]
+            s = [a.shape[ax] for ax in axes]
     else:
         user_shape = True
         s = list(s)
@@ -36,12 +36,8 @@ def _sanitize_user_axes(a, s, axes, is_c2r=False):
     return s, axes
 
 
-def _real_to_complex_kind(fft_type):
-    if fft_type == FFTCode.FFT_D2Z or fft_type == FFTCode.FFT_Z2D:
-        return FFTCode.FFT_Z2Z
-    elif fft_type == FFTCode.FFT_R2C or fft_type == FFTCode.FFT_C2R:
-        return FFTCode.FFT_C2C
-    return fft_type
+def _operate_by_axes(a, axes):
+    return len(axes) != len(set(axes)) or len(axes) != a.ndim or axes != sorted(axes)
 
 
 @add_boilerplate("a")
@@ -555,25 +551,16 @@ def rfftn(a, s=None, axes=None, norm=None):
     # Convert to real if complex
     if a.dtype != np.float32 and a.dtype != np.float64:
         a = a.real
-    # Check for types
-    fft_type = None
-    if a.dtype == np.float64:
-        fft_type = FFTCode.FFT_D2Z
-    elif a.dtype == np.float32:
-        fft_type = FFTCode.FFT_R2C
-    else:
-        raise TypeError("FFT input not supported (missing a conversion?)")
+    # Retrieve type
+    fft_type = FFTCode.real_to_complex_code(a.dtype)
 
     s, axes = _sanitize_user_axes(a, s, axes)
-    operate_by_axes = (len(axes) != len(set(axes))) or (len(axes) != a.ndim)
-    if not operate_by_axes:
-        operate_by_axes = axes != sorted(axes)
 
     # Operate by axes
-    if operate_by_axes:
+    if _operate_by_axes(a, axes):
         r2c = a.fft(s=[s[-1]], axes=[axes[-1]], kind=fft_type, direction=FFTDirection.FORWARD, norm=norm)
         if len(axes) > 1:
-            return r2c.fft(s=s[0:-1], axes=axes[0:-1], kind=_real_to_complex_kind(fft_type), direction=FFTDirection.FORWARD, norm=norm)
+            return r2c.fft(s=s[0:-1], axes=axes[0:-1], kind=fft_type.complex, direction=FFTDirection.FORWARD, norm=norm)
         else:
             return r2c
     # Operate as a single FFT
@@ -753,24 +740,15 @@ def irfftn(a, s=None, axes=None, norm=None):
         a = a.astype(np.complex64)
     elif a.dtype == np.float64:
         a = a.astype(np.complex128)
-    # Check for types, no conversions for now
-    fft_type = None
-    if a.dtype == np.complex128:
-        fft_type = FFTCode.FFT_Z2D
-    elif a.dtype == np.complex64:
-        fft_type = FFTCode.FFT_C2R
-    else:
-        raise TypeError("FFT input not supported (missing a conversion?)")
+    # Retrieve type
+    fft_type = FFTCode.complex_to_real_code(a.dtype)
 
     s, axes = _sanitize_user_axes(a, s, axes, is_c2r=True)
-    operate_by_axes = (len(axes) != len(set(axes))) or (len(axes) != a.ndim)
-    if not operate_by_axes:
-        operate_by_axes = axes != sorted(axes)
         
     # Operate by axes
-    if operate_by_axes:
+    if _operate_by_axes(a, axes):
         if len(axes) > 1:
-            c2r = a.fft(s=s[0:-1], axes=axes[0:-1], kind=_real_to_complex_kind(fft_type), direction=FFTDirection.INVERSE, norm=norm)
+            c2r = a.fft(s=s[0:-1], axes=axes[0:-1], kind=fft_type.complex, direction=FFTDirection.INVERSE, norm=norm)
         else:
             c2r = a
         return c2r.fft(s=[s[-1]], axes=[axes[-1]], kind=fft_type, direction=FFTDirection.INVERSE, norm=norm)

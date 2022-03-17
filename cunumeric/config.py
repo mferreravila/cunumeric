@@ -14,6 +14,7 @@
 #
 
 import os
+import numpy as np
 from enum import IntEnum, unique
 
 from legate.core import Library, ResourceConfig, get_legate_runtime
@@ -214,11 +215,71 @@ class CuNumericTunable(IntEnum):
 @unique
 class FFTCode(IntEnum):
     FFT_R2C = 0x2a
-    FFT_C2R = 0x2c 
-    FFT_C2C = 0x29 
-    FFT_D2Z = 0x6a 
-    FFT_Z2D = 0x6c 
+    FFT_C2R = 0x2c
+    FFT_C2C = 0x29
+    FFT_D2Z = 0x6a
+    FFT_Z2D = 0x6c
     FFT_Z2Z = 0x69
+
+    @staticmethod
+    def real_to_complex_code(dtype):
+        if dtype == np.float64:
+            return FFTCode.FFT_D2Z
+        elif dtype == np.float32:
+            return FFTCode.FFT_R2C
+        else:
+            raise TypeError("Data type for FFT not supported (supported types are float32 and float64)")
+
+    @staticmethod
+    def complex_to_real_code(dtype):
+        if dtype == np.complex128:
+            return FFTCode.FFT_Z2D
+        elif dtype == np.complex64:
+            return FFTCode.FFT_C2R
+        else:
+            raise TypeError("Data type for FFT not supported (supported types are complex64 and complex128)")
+
+    @property
+    def complex(self):
+        if self == FFTCode.FFT_D2Z or self == FFTCode.FFT_Z2D:
+            return FFTCode.FFT_Z2Z
+        elif self == FFTCode.FFT_R2C or self == FFTCode.FFT_C2R:
+            return FFTCode.FFT_C2C
+        return self
+
+    @property
+    def input_dtype(self):
+        if self == FFTCode.FFT_D2Z:
+            return np.float64
+        elif self == FFTCode.FFT_R2C:
+            return np.float32
+        elif self == FFTCode.FFT_Z2D:
+            return np.complex128
+        elif self == FFTCode.FFT_C2R:
+            return np.complex64
+        elif self == FFTCode.FFT_Z2Z:
+            return np.complex128
+        elif self == FFTCode.FFT_C2C:
+            return np.complex64
+        else:
+            raise TypeError("Unrecognized type for FFT (missing conversion?)")
+
+    @property
+    def output_dtype(self):
+        if self == FFTCode.FFT_D2Z:
+            return np.complex128
+        elif self == FFTCode.FFT_R2C:
+            return np.complex64
+        elif self == FFTCode.FFT_Z2D:
+            return np.float64
+        elif self == FFTCode.FFT_C2R:
+            return np.float32
+        elif self == FFTCode.FFT_Z2Z:
+            return np.complex128
+        elif self == FFTCode.FFT_C2C:
+            return np.complex64
+        else:
+            raise TypeError("Unrecognized type for FFT (missing conversion?)")
 
 @unique
 class FFTDirection(IntEnum):

@@ -75,6 +75,7 @@ static void fft_template(TaskContext& context)
 
   args.output            = std::move(outputs[0]);
   args.input             = std::move(inputs[0]);
+  // Scalar arguments. Pay attention to indexes / ranges when adding or reordering arguments
   args.type              = scalars[0].value<fftType>();
   args.direction         = scalars[1].value<fftDirection>();
   args.operate_over_axes = static_cast<bool>(scalars[2].value<uint8_t>());

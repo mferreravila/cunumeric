@@ -25,6 +25,8 @@ namespace cunumeric {
 using namespace Legion;
 using namespace legate;
 
+using dim_t = long long int;
+
 template <int DIM>
 __host__ static inline void cufft_operation(void* output,
                                             void* input,
@@ -39,9 +41,9 @@ __host__ static inline void cufft_operation(void* output,
 
     size_t workarea_size;
     size_t num_elements;
-    int n[DIM];
-    int inembed[DIM];
-    int onembed[DIM];
+    dim_t n[DIM];
+    dim_t inembed[DIM];
+    dim_t onembed[DIM];
 
     const Point<DIM> zero   = Point<DIM>::ZEROES();
     const Point<DIM> one    = Point<DIM>::ONES();
@@ -62,7 +64,7 @@ __host__ static inline void cufft_operation(void* output,
     CHECK_CUFFT(cufftSetStream(plan, stream));
 
     // Create the plan and allocate a temporary buffer for it if it needs one
-    CHECK_CUFFT(cufftMakePlanMany(plan, DIM, n, inembed, 1, 1, onembed, 1, 1, (cufftType)type, 1, &workarea_size));
+    CHECK_CUFFT(cufftMakePlanMany64(plan, DIM, n, inembed, 1, 1, onembed, 1, 1, (cufftType)type, 1, &workarea_size));
 
     DeferredBuffer<uint8_t, 1> workarea_buffer;
     if(workarea_size > 0) {
@@ -145,9 +147,9 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
     size_t workarea_size;
-    int n[DIM];
-    int inembed[DIM];
-    int onembed[DIM];
+    dim_t n[DIM];
+    dim_t inembed[DIM];
+    dim_t onembed[DIM];
 
     // Full volume dimensions / strides
     const Point<DIM> zero   = Point<DIM>::ZEROES();
@@ -171,7 +173,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
                                                  128 /*alignment*/);
     CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements_in*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
 
-    for(auto ax = axes.begin(); ax != axes.end(); ++ax) {
+    for(auto& ax : axes) {
       // Create the plan
       cufftHandle plan;
       CHECK_CUFFT(cufftCreate(&plan));
@@ -179,20 +181,20 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
       CHECK_CUFFT(cufftSetStream(plan, stream));
 
       // Single axis dimensions / stridfes
-      int size_1d = n[*ax];
+      dim_t size_1d = n[ax];
       // TODO: batches only correct for DIM <= 3. Fix for N-DIM case
-      int batches = (DIM == 3 && *ax == 1) ? n[2] : num_elements_in / n[*ax];
-      int istride = 1;
-      int ostride = 1;
-      for(int i = *ax+1; i < DIM; ++i) {
+      dim_t batches = (DIM == 3 && ax == 1) ? n[2] : num_elements_in / n[ax];
+      dim_t istride = 1;
+      dim_t ostride = 1;
+      for(int i = ax+1; i < DIM; ++i) {
         istride *= fft_size_in[i];
         ostride *= fft_size_out[i];
       }
-      int idist = (*ax == DIM-1) ? fft_size_in[*ax] : 1;
-      int odist = (*ax == DIM-1) ? fft_size_out[*ax] : 1;
+      dim_t idist = (ax == DIM-1) ? fft_size_in[ax] : 1;
+      dim_t odist = (ax == DIM-1) ? fft_size_out[ax] : 1;
 
       // Create the plan and allocate a temporary buffer for it if it needs one
-      CHECK_CUFFT(cufftMakePlanMany(plan, 1, &size_1d, inembed, istride, idist, onembed, ostride, odist, (cufftType)type, batches, &workarea_size));
+      CHECK_CUFFT(cufftMakePlanMany64(plan, 1, &size_1d, inembed, istride, idist, onembed, ostride, odist, (cufftType)type, batches, &workarea_size));
 
       DeferredBuffer<uint8_t, 1> workarea_buffer;
       if(workarea_size > 0) {
@@ -207,7 +209,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
       }
 
       // TODO: following function only correct for DIM <= 3. Fix for N-DIM case
-      cufft_axes_plan<DIM, INPUT_TYPE, INPUT_TYPE>::execute(plan, input_buffer, input_buffer, out_rect, in_rect, *ax, direction);
+      cufft_axes_plan<DIM, INPUT_TYPE, INPUT_TYPE>::execute(plan, input_buffer, input_buffer, out_rect, in_rect, ax, direction);
 
       // Clean up our resources, DeferredBuffers are cleaned up by Legion
       CHECK_CUFFT(cufftDestroy(plan));
@@ -230,9 +232,9 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
     size_t workarea_size;
-    int n[DIM];
-    int inembed[DIM];
-    int onembed[DIM];
+    dim_t n[DIM];
+    dim_t inembed[DIM];
+    dim_t onembed[DIM];
 
     // Full volume dimensions / strides
     const Point<DIM> zero   = Point<DIM>::ZEROES();
@@ -267,24 +269,24 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
     CHECK_CUFFT(cufftSetStream(plan, stream));
 
     // Operate over the R2C or C2R axes, which is the first one
-    auto axis = *(axes.begin());
+    auto axis = axes.front();
 
     // Batched 1D dimension
-    int size_1d = n[axis];
+    dim_t size_1d = n[axis];
     // TODO: batch only correct for DIM <= 3. Fix for N-DIM case
-    int batches = (direction == fftDirection::FFT_FORWARD) ? num_elements_in : num_elements_out;
-        batches = (DIM == 3 && axis == 1) ? n[2] : batches / n[axis];
-    int istride = 1;
-    int ostride = 1;
+    dim_t batches = (direction == fftDirection::FFT_FORWARD) ? num_elements_in : num_elements_out;
+                  batches = (DIM == 3 && axis == 1) ? n[2] : batches / n[axis];
+    dim_t istride = 1;
+    dim_t ostride = 1;
     for(int i = axis+1; i < DIM; ++i) {
       istride *= fft_size_in[i];
       ostride *= fft_size_out[i];
     }
-    int idist = (axis == DIM-1) ? fft_size_in[axis]  : 1;
-    int odist = (axis == DIM-1) ? fft_size_out[axis] : 1;
+    dim_t idist = (axis == DIM-1) ? fft_size_in[axis]  : 1;
+    dim_t odist = (axis == DIM-1) ? fft_size_out[axis] : 1;
 
     // Create the plan and allocate a temporary buffer for it if it needs one
-    CHECK_CUFFT(cufftMakePlanMany(plan, 1, &size_1d, inembed, istride, idist, onembed, ostride, odist, (cufftType)type, batches, &workarea_size));
+    CHECK_CUFFT(cufftMakePlanMany64(plan, 1, &size_1d, inembed, istride, idist, onembed, ostride, odist, (cufftType)type, batches, &workarea_size));
 
     DeferredBuffer<uint8_t, 1> workarea_buffer;
     if(workarea_size > 0) {
