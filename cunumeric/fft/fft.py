@@ -37,7 +37,7 @@ def _sanitize_user_axes(a, s, axes, is_c2r=False):
 
 
 def _operate_by_axes(a, axes):
-    return len(axes) != len(set(axes)) or len(axes) != a.ndim or axes != sorted(axes)
+    return len(axes) != len(set(axes)) or len(axes) != a.ndim or tuple(axes) != tuple(sorted(axes))
 
 
 @add_boilerplate("a")
@@ -744,7 +744,7 @@ def irfftn(a, s=None, axes=None, norm=None):
     fft_type = FFTCode.complex_to_real_code(a.dtype)
 
     s, axes = _sanitize_user_axes(a, s, axes, is_c2r=True)
-        
+
     # Operate by axes
     if _operate_by_axes(a, axes):
         if len(axes) > 1:
