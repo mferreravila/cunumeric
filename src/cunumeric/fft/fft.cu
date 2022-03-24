@@ -39,7 +39,7 @@ __host__ static inline void cufft_operation(void* output,
     cudaStream_t stream;
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
-    size_t workarea_size;
+    size_t workarea_size = 0;
     size_t num_elements;
     dim_t n[DIM];
     dim_t inembed[DIM];
@@ -146,7 +146,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
     cudaStream_t stream;
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
-    size_t workarea_size;
+    size_t workarea_size = 0;
     dim_t n[DIM];
     dim_t inembed[DIM];
     dim_t onembed[DIM];
@@ -171,7 +171,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
                                                  Memory::GPU_FB_MEM,
                                                  nullptr /*initial*/,
                                                  128 /*alignment*/);
-    CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements_in*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements_in*sizeof(INPUT_TYPE), cudaMemcpyDefault, stream));
 
     for(auto& ax : axes) {
       // Create the plan
@@ -214,7 +214,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
       // Clean up our resources, DeferredBuffers are cleaned up by Legion
       CHECK_CUFFT(cufftDestroy(plan));
     }
-    CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), input_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), input_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDefault, stream));
     CHECK_CUDA(cudaStreamSynchronize(stream));
     CHECK_CUDA(cudaStreamDestroy(stream));
 }
@@ -232,7 +232,7 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
     cudaStream_t stream;
     CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
 
-    size_t workarea_size;
+    size_t workarea_size = 0;
     dim_t n[DIM];
     dim_t inembed[DIM];
     dim_t onembed[DIM];
@@ -257,7 +257,7 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
                                                  Memory::GPU_FB_MEM,
                                                  nullptr /*initial*/,
                                                  128 /*alignment*/);
-    CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements_in*sizeof(INPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaMemcpyAsync(input_buffer.ptr(zero), in.ptr(zero), num_elements_in*sizeof(INPUT_TYPE), cudaMemcpyDefault, stream));
 
     DeferredBuffer<OUTPUT_TYPE, DIM> output_buffer(Rect<DIM>(zero, fft_size_out - one),
                                                   Memory::GPU_FB_MEM,
@@ -303,7 +303,7 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
 
     cufft_axes_plan<DIM, OUTPUT_TYPE, INPUT_TYPE>::execute(plan, output_buffer, input_buffer, out_rect, in_rect, axis, direction);
 
-    CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), output_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDeviceToDevice, stream));
+    CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), output_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDefault, stream));
 
     // Clean up our resources, DeferredBuffers are cleaned up by Legion
     CHECK_CUFFT(cufftDestroy(plan));

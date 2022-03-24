@@ -2240,6 +2240,7 @@ class ndarray:
             for idx, ax in enumerate(fft_axes):
                 fft_input_shape[ax] = s[idx]
             fft_input_shape = tuple(fft_input_shape)
+            # TODO: always copying is not the best idea, sometimes a view of the original input will do
             fft_input  = ndarray(shape=fft_input_shape, thunk=zero_padded_input._thunk.get_item(tuple(slice(0,i) for i in fft_s))).copy()
             fft_output_shape = fft_input_shape
 
