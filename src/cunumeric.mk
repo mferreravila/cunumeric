@@ -47,6 +47,7 @@ GEN_CPU_SRC += cunumeric/ternary/where.cc               \
 							 cunumeric/set/unique_reduce.cc           \
 							 cunumeric/stat/bincount.cc               \
 							 cunumeric/convolution/convolve.cc        \
+							 cunumeric/fft/fft.cc                     \
 							 cunumeric/transform/flip.cc              \
 							 cunumeric/arg.cc                         \
 							 cunumeric/mapper.cc
@@ -81,6 +82,7 @@ GEN_CPU_SRC += cunumeric/ternary/where_omp.cc          \
 							 cunumeric/set/unique_omp.cc             \
 							 cunumeric/stat/bincount_omp.cc          \
 							 cunumeric/convolution/convolve_omp.cc   \
+							 cunumeric/fft/fft_omp.cc                \
 							 cunumeric/transform/flip_omp.cc
 endif
 
@@ -117,7 +119,8 @@ GEN_GPU_SRC += cunumeric/ternary/where.cu               \
 							 cunumeric/search/nonzero.cu              \
 							 cunumeric/set/unique.cu                  \
 							 cunumeric/stat/bincount.cu               \
-							 cunumeric/convolution/convolve.cu	      \
+							 cunumeric/convolution/convolve.cu        \
+							 cunumeric/fft/fft.cu                     \
 							 cunumeric/transform/flip.cu              \
 							 cunumeric/cudalibs.cu                    \
 							 cunumeric/cunumeric.cu
