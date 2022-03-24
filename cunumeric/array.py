@@ -24,6 +24,7 @@ import pyarrow
 from legate.core import Array
 
 from .config import BinaryOpCode, UnaryOpCode, UnaryRedCode, FFTCode, FFTDirection, FFTNormalization
+from .coverage import clone_class
 from .runtime import runtime
 from .utils import dot_modes
 
@@ -166,7 +167,8 @@ def convert_to_predicate_ndarray(obj):
     )
 
 
-class ndarray(object):
+@clone_class(np.ndarray)
+class ndarray:
     def __init__(
         self,
         shape,
@@ -1202,12 +1204,6 @@ class ndarray(object):
         Multiple GPUs, Multiple CPUs
 
         """
-        if (
-            self.dtype.type == np.uint16
-            or self.dtype.type == np.uint32
-            or self.dtype.type == np.uint64
-        ):
-            raise TypeError("cannot negate unsigned type " + str(self.dtype))
         return self._perform_unary_op(UnaryOpCode.NEGATIVE, self)
 
     # __new__
@@ -1277,15 +1273,8 @@ class ndarray(object):
         Multiple GPUs, Multiple CPUs
 
         """
-        # We know these types are already positive
-        if (
-            self.dtype.type == np.uint16
-            or self.dtype.type == np.uint32
-            or self.dtype.type == np.uint64
-            or self.dtype.type == np.bool_
-        ):
-            return self
-        return self._perform_unary_op(UnaryOpCode.POSITIVE, self)
+        # the positive opeartor is equivalent to copy
+        return self._perform_unary_op(UnaryOpCode.COPY, self)
 
     def __pow__(self, rhs):
         """a.__pow__(value, /)
@@ -2773,6 +2762,14 @@ class ndarray(object):
         """
         self.__array__().setflags(write=write, align=align, uic=uic)
 
+    def sort(self, axis=-1, kind="quicksort", order=None):
+        self._thunk.sort(rhs=self._thunk, axis=axis, kind=kind, order=order)
+
+    def argsort(self, axis=-1, kind="quicksort", order=None):
+        self._thunk.sort(
+            rhs=self._thunk, argsort=True, axis=axis, kind=kind, order=order
+        )
+
     def squeeze(self, axis=None):
         """a.squeeze(axis=None)
 
@@ -3111,6 +3108,21 @@ class ndarray(object):
         return ndarray(shape=self.shape, dtype=self.dtype, thunk=self._thunk)
 
     def unique(self):
+        """a.unique()
+
+        Find the unique elements of an array.
+
+        Refer to :func:`cunumeric.unique` for full documentation.
+
+        See Also
+        --------
+        cunumeric.unique : equivalent function
+
+        Availability
+        --------
+        Multiple GPUs, Multiple CPUs
+
+        """
         thunk = self._thunk.unique()
         return ndarray(shape=thunk.shape, thunk=thunk)
 
@@ -3214,13 +3226,6 @@ class ndarray(object):
         if where is False:
             return dst
 
-        op_dtype = (
-            dst.dtype
-            if out_dtype is None
-            and not (op == UnaryOpCode.ABSOLUTE and src.dtype.kind == "c")
-            else src.dtype
-        )
-
         if out_dtype is None:
             if dst.dtype != src.dtype and not (
                 op == UnaryOpCode.ABSOLUTE and src.dtype.kind == "c"
@@ -3232,7 +3237,6 @@ class ndarray(object):
                 )
                 temp._thunk.unary_op(
                     op,
-                    op_dtype,
                     src._thunk,
                     cls._get_where_thunk(where, dst.shape),
                     extra_args,
@@ -3241,7 +3245,6 @@ class ndarray(object):
             else:
                 dst._thunk.unary_op(
                     op,
-                    op_dtype,
                     src._thunk,
                     cls._get_where_thunk(where, dst.shape),
                     extra_args,
@@ -3255,7 +3258,6 @@ class ndarray(object):
                 )
                 temp._thunk.unary_op(
                     op,
-                    op_dtype,
                     src._thunk,
                     cls._get_where_thunk(where, dst.shape),
                     extra_args,
@@ -3264,7 +3266,6 @@ class ndarray(object):
             else:
                 dst._thunk.unary_op(
                     op,
-                    op_dtype,
                     src._thunk,
                     cls._get_where_thunk(where, dst.shape),
                     extra_args,

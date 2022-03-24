@@ -34,6 +34,7 @@ from .config import (
     UnaryRedCode,
 )
 from .linalg.cholesky import cholesky
+from .sort import sort
 from .thunk import NumPyThunk
 from .utils import get_arg_value_dtype
 
@@ -241,7 +242,6 @@ class DeferredArray(NumPyThunk):
 
         result.unary_op(
             UnaryOpCode.IMAG,
-            result.dtype,
             self,
             True,
             [],
@@ -259,7 +259,6 @@ class DeferredArray(NumPyThunk):
 
         result.unary_op(
             UnaryOpCode.REAL,
-            result.dtype,
             self,
             True,
             [],
@@ -276,7 +275,6 @@ class DeferredArray(NumPyThunk):
 
         result.unary_op(
             UnaryOpCode.CONJ,
-            result.dtype,
             self,
             True,
             [],
@@ -292,7 +290,6 @@ class DeferredArray(NumPyThunk):
             return
         self.unary_op(
             UnaryOpCode.COPY,
-            rhs.dtype,
             rhs,
             True,
             [],
@@ -1260,6 +1257,32 @@ class DeferredArray(NumPyThunk):
 
         task.execute()
 
+    # Repeat elements of an array.
+    def repeat(self, repeats, axis, scalar_repeats):
+        # FIXME current implementation supports only 1D, waiting on
+        # issue 242 to be addressed to support ND arrays
+        # for ND I would need to promore `repeats` to allign with A
+        # and  constrain the tiling
+        if self.ndim > 1:
+            raise NotImplementedError(
+                "repeat operation is supported only for 1D"
+            )
+        out = self.runtime.create_unbound_thunk(self.dtype)
+        task = self.context.create_task(CuNumericOpCode.REPEAT)
+        task.add_input(self.base)
+        task.add_output(out.base)
+        # We pass axis now but don't use for 1D case (will use for ND case
+        task.add_scalar_arg(axis, ty.int32)
+        task.add_scalar_arg(scalar_repeats, bool)
+        if scalar_repeats:
+            task.add_scalar_arg(repeats, ty.int64)
+        else:
+            repeats = self.runtime.to_deferred_array(repeats)
+            task.add_input(repeats.base)
+            task.add_alignment(self.base, repeats.base)
+        task.execute()
+        return out
+
     @auto_convert([1])
     def flip(self, rhs, axes):
         input = rhs.base
@@ -1357,8 +1380,8 @@ class DeferredArray(NumPyThunk):
         self.random(RandGenCode.INTEGER, [low, high])
 
     # Perform the unary operation and put the result in the array
-    @auto_convert([3])
-    def unary_op(self, op, op_dtype, src, where, args):
+    @auto_convert([2])
+    def unary_op(self, op, src, where, args):
         lhs = self.base
         rhs = src._broadcast(lhs.shape)
 
@@ -1466,7 +1489,6 @@ class DeferredArray(NumPyThunk):
             if argred:
                 self.unary_op(
                     UnaryOpCode.GETARG,
-                    self.dtype,
                     lhs_array,
                     True,
                     [],
@@ -1587,3 +1609,21 @@ class DeferredArray(NumPyThunk):
             )
 
         return result
+
+    @auto_convert([1])
+    def sort(self, rhs, argsort=False, axis=-1, kind="quicksort", order=None):
+
+        if kind == "stable":
+            stable = True
+        else:
+            stable = False
+
+        if order is not None:
+            raise NotImplementedError(
+                "cuNumeric does not support sorting with 'order' as "
+                "ndarray only supports numeric values"
+            )
+        if axis is not None and (axis >= rhs.ndim or axis < -rhs.ndim):
+            raise ValueError("invalid axis")
+
+        sort(self, rhs, argsort, axis, stable)
