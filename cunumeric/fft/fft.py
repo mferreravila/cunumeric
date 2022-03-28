@@ -86,8 +86,8 @@ def fft(a, n=None, axis=-1, norm=None):
     GPU
     """
     s = (n,) if n is not None else None
-    axis = (axis,) if axis is not None else None
-    return fftn(a=a, s=s, axes=axis, norm=norm)
+    axes = (axis,) if axis is not None else None
+    return fftn(a=a, s=s, axes=axes, norm=norm)
 
 
 @add_boilerplate("a")

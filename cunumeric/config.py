@@ -297,7 +297,7 @@ class FFTCode(IntEnum):
         elif self == FFTCode.FFT_C2C:
             return np.complex64
         else:
-            raise TypeError("Unrecognized type for FFT (missing conversion?)")
+            raise TypeError("Type of FFT not supported (supported types are C2C, R2C, C2R, Z2Z, D2Z, Z2D)")
 
     @property
     def output_dtype(self):
@@ -314,7 +314,7 @@ class FFTCode(IntEnum):
         elif self == FFTCode.FFT_C2C:
             return np.complex64
         else:
-            raise TypeError("Unrecognized type for FFT (missing conversion?)")
+            raise TypeError("Type of FFT not supported (supported types are C2C, R2C, C2R, Z2Z, D2Z, Z2D)")
 
 @unique
 class FFTDirection(IntEnum):

@@ -129,17 +129,18 @@ struct cufft_axes_plan<3, OUTPUT_TYPE, INPUT_TYPE>{
   }
 };
 
-// Perform the FFT operation as multiple 1D FFTs along the specified axes.
+// Perform the FFT operation as multiple 1D FFTs along the specified axes (Complex-to-complex case).
 // For now, it only supports up to 3D FFTs, but final plan is having support for
 // N-dimensional FFTs using this approach.
+// See cufft_over_axis_r2c_c2r for the equivalent on a single R2C/C2R axis.
 template <int DIM, typename OUTPUT_TYPE, typename INPUT_TYPE>
-__host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
-                                            AccessorRO<INPUT_TYPE, DIM> in,
-                                            const Rect<DIM>& out_rect,
-                                            const Rect<DIM>& in_rect,
-                                            std::vector<int64_t>& axes,
-                                            fftType type,
-                                            fftDirection direction)
+__host__ static inline void cufft_over_axes_c2c(AccessorWO<OUTPUT_TYPE, DIM> out,
+                                                AccessorRO<INPUT_TYPE, DIM> in,
+                                                const Rect<DIM>& out_rect,
+                                                const Rect<DIM>& in_rect,
+                                                std::vector<int64_t>& axes,
+                                                fftType type,
+                                                fftDirection direction)
 {
     auto stream = get_cached_stream();
 
@@ -156,7 +157,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
     size_t num_elements_in  = 1;
     size_t num_elements_out = 1;
     for(int i = 0; i < DIM; ++i) {
-      n[i]          = /*(type == fftType::FFT_R2C || type == fftType::FFT_D2Z) ? fft_size_in[i] :*/ fft_size_out[i];
+      n[i]          = fft_size_out[i];
       inembed[i]    = fft_size_in[i];
       onembed[i]    = fft_size_out[i];
       num_elements_in  *= fft_size_in[i];
@@ -215,7 +216,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
     CHECK_CUDA(cudaStreamSynchronize(stream));
 }
 
-// Perform the FFT operation as multiple 1D FFTs along the specified axes, single R2C/C2R operation
+// Perform the FFT operation as multiple 1D FFTs along the specified axes, single R2C/C2R operation.
 template <int DIM, typename OUTPUT_TYPE, typename INPUT_TYPE>
 __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM> out,
                                                     AccessorRO<INPUT_TYPE, DIM> in,
@@ -330,7 +331,7 @@ struct FFTImplBody<VariantKind::GPU, FFT_TYPE, CODE_OUT, CODE_IN, DIM> {
       }
       // C2C can be multiple 1D dimensions over axes
       else {
-        cufft_over_axes<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);        
+        cufft_over_axes_c2c<DIM, OUTPUT_TYPE, INPUT_TYPE>(out, in, out_rect, in_rect, axes, FFT_TYPE, direction);        
       }
     }
     // If we have one axis per dimension, then it can be done as a single operation (more performant)
