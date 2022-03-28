@@ -36,8 +36,7 @@ __host__ static inline void cufft_operation(void* output,
                                             fftType type,
                                             fftDirection direction)
 {
-    cudaStream_t stream;
-    CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    auto stream = get_cached_stream();
 
     size_t workarea_size = 0;
     size_t num_elements;
@@ -83,7 +82,6 @@ __host__ static inline void cufft_operation(void* output,
 
     // Clean up our resources, DeferredBuffers are cleaned up by Legion
     CHECK_CUFFT(cufftDestroy(plan));
-    CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
 template<int DIM, typename OUTPUT_TYPE, typename INPUT_TYPE>
@@ -143,8 +141,7 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
                                             fftType type,
                                             fftDirection direction)
 {
-    cudaStream_t stream;
-    CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    auto stream = get_cached_stream();
 
     size_t workarea_size = 0;
     dim_t n[DIM];
@@ -216,7 +213,6 @@ __host__ static inline void cufft_over_axes(AccessorWO<OUTPUT_TYPE, DIM> out,
     }
     CHECK_CUDA(cudaMemcpyAsync(out.ptr(zero), input_buffer.ptr(zero), num_elements_out*sizeof(OUTPUT_TYPE), cudaMemcpyDefault, stream));
     CHECK_CUDA(cudaStreamSynchronize(stream));
-    CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
 // Perform the FFT operation as multiple 1D FFTs along the specified axes, single R2C/C2R operation
@@ -229,8 +225,7 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
                                                     fftType type,
                                                     fftDirection direction)
 {
-    cudaStream_t stream;
-    CHECK_CUDA(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    auto stream = get_cached_stream();
 
     size_t workarea_size = 0;
     dim_t n[DIM];
@@ -308,7 +303,6 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
     // Clean up our resources, DeferredBuffers are cleaned up by Legion
     CHECK_CUFFT(cufftDestroy(plan));
     CHECK_CUDA(cudaStreamSynchronize(stream));
-    CHECK_CUDA(cudaStreamDestroy(stream));
 }
 
 template <fftType FFT_TYPE, LegateTypeCode CODE_OUT, LegateTypeCode CODE_IN, int DIM>
