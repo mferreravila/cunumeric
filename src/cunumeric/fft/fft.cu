@@ -265,7 +265,8 @@ __host__ static inline void cufft_over_axis_r2c_c2r(AccessorWO<OUTPUT_TYPE, DIM>
     CHECK_CUFFT(cufftSetAutoAllocation(plan, 0 /*we'll do the allocation*/));
     CHECK_CUFFT(cufftSetStream(plan, stream));
 
-    // Operate over the R2C or C2R axes, which is the first one
+    // Operate over the R2C or C2R axis, which should be the only one in the list
+    assert(axes.size() == 1);
     auto axis = axes.front();
 
     // Batched 1D dimension

@@ -30,7 +30,7 @@ def _sanitize_user_axes(a, s, axes, is_c2r=False):
         user_shape = True
         s = list(s)
     if axes is None:
-        axes = list(range(-len(s), 0))
+        axes = list(range(len(s)))
     if is_c2r and not user_shape:
         s[-1] = 2 * (a.shape[axes[-1]] - 1)
     return s, axes

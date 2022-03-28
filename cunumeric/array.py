@@ -2195,7 +2195,7 @@ class ndarray:
         if user_axes:
             fft_axes = axes
         else:
-            fft_axes = range(-len(s),0) if user_sizes else range(self.ndim)
+            fft_axes = range(len(s)) if user_sizes else range(self.ndim)
         if np.max(np.abs(list(fft_axes))) > self.ndim:
             raise ValueError(
                 "Axis is out of bounds for array of size {}".format(self.ndim)
