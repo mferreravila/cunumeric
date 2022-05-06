@@ -116,7 +116,7 @@ def max_identity(ty):
     elif ty.kind == "f":
         return np.finfo(ty).min
     elif ty.kind == "c":
-        return max_identity(np.float64) + max_identity(np.float64) * 1j
+        return np.finfo(np.float64).min + np.finfo(np.float64).min * 1j
     elif ty.kind == "b":
         return False
     else:
@@ -129,7 +129,7 @@ def min_identity(ty):
     elif ty.kind == "f":
         return np.finfo(ty).max
     elif ty.kind == "c":
-        return min_identity(np.float64) + min_identity(np.float64) * 1j
+        return np.finfo(np.float64).max + np.finfo(np.float64).max * 1j
     elif ty.kind == "b":
         return True
     else:
@@ -394,6 +394,7 @@ class DeferredArray(NumPyThunk):
         task.add_scalar_arg(self.ndim, ty.int64)  # N of points in Point<N>
         task.add_scalar_arg(key_dim, ty.int64)  # key_dim
         task.add_scalar_arg(start_index, ty.int64)  # start_index
+        task.add_scalar_arg(self.shape, (ty.int64,))
         for a in arrays:
             task.add_input(a)
             task.add_alignment(output_arr.base, a)
@@ -422,7 +423,7 @@ class DeferredArray(NumPyThunk):
         start_index = -1
         if (
             isinstance(key, NumPyThunk)
-            and key.dtype == np.bool
+            and key.dtype == bool
             and key.shape == rhs.shape
         ):
             if not isinstance(key, DeferredArray):
@@ -476,7 +477,7 @@ class DeferredArray(NumPyThunk):
                 transpose_needed = transpose_needed or ((dim - last_index) > 1)
                 if (
                     isinstance(k, NumPyThunk)
-                    and k.dtype == np.bool
+                    and k.dtype == bool
                     and k.ndim >= 2
                 ):
                     for i in range(dim, dim + k.ndim):
@@ -513,7 +514,7 @@ class DeferredArray(NumPyThunk):
             elif isinstance(k, NumPyThunk):
                 if not isinstance(key, DeferredArray):
                     k = self.runtime.to_deferred_array(k)
-                if k.dtype == np.bool:
+                if k.dtype == bool:
                     for i in range(k.ndim):
                         if k.shape[i] != store.shape[dim + i + shift]:
                             raise ValueError(
@@ -543,16 +544,9 @@ class DeferredArray(NumPyThunk):
             # the store with transformation
             rhs, store = self._copy_store(store)
 
-        if len(tuple_of_arrays) <= rhs.ndim and rhs.ndim > 1:
+        if len(tuple_of_arrays) <= rhs.ndim:
             output_arr = rhs._zip_indices(start_index, tuple_of_arrays)
             return True, rhs, output_arr, self
-        elif len(tuple_of_arrays) == 1 and rhs.ndim == 1:
-            key = tuple_of_arrays[0]
-            # when key is transformed, we need to return a copy in purpose
-            # to use it as an indirection in copy operation
-            if key.base.transformed:
-                key, key_store = key._copy_store(key.base)
-            return True, rhs, key, self
         else:
             raise ValueError("Advanced indexing dimension mismatch")
 
@@ -1357,6 +1351,7 @@ class DeferredArray(NumPyThunk):
         offset,
         naxes,
         extract,
+        trace,
     ):
         # fill output array with 0
         self.fill(np.array(0, dtype=self.dtype))
@@ -1370,10 +1365,18 @@ class DeferredArray(NumPyThunk):
                 # get slice of the original array by the offset
                 if offset > 0:
                     matrix = matrix.slice(start + 1, slice(offset, None))
-                if matrix.shape[n - 1] < matrix.shape[n]:
-                    diag = diag.promote(start + 1, matrix.shape[ndim - 1])
+                if trace:
+                    if matrix.ndim == 2:
+                        diag = diag.promote(0, matrix.shape[0])
+                        diag = diag.project(1, 0).promote(1, matrix.shape[1])
+                    else:
+                        for i in range(0, naxes):
+                            diag = diag.promote(start, matrix.shape[-i - 1])
                 else:
-                    diag = diag.promote(start, matrix.shape[ndim - 2])
+                    if matrix.shape[n - 1] < matrix.shape[n]:
+                        diag = diag.promote(start + 1, matrix.shape[ndim - 1])
+                    else:
+                        diag = diag.promote(start, matrix.shape[ndim - 2])
             else:
                 # promote output to the shape of the input  array
                 for i in range(1, naxes):
@@ -1862,6 +1865,28 @@ class DeferredArray(NumPyThunk):
             raise ValueError("invalid axis")
 
         sort(self, rhs, argsort, axis, stable)
+
+    @auto_convert([1])
+    def partition(
+        self,
+        rhs,
+        kth,
+        argpartition=False,
+        axis=-1,
+        kind="introselect",
+        order=None,
+    ):
+
+        if order is not None:
+            raise NotImplementedError(
+                "cuNumeric does not support partitioning with 'order' as "
+                "ndarray only supports numeric values"
+            )
+        if axis is not None and (axis >= rhs.ndim or axis < -rhs.ndim):
+            raise ValueError("invalid axis")
+
+        # fallback to sort for now
+        sort(self, rhs, argpartition, axis, False)
 
     def create_window(self, op_code, M, *args):
         task = self.context.create_task(CuNumericOpCode.WINDOW)

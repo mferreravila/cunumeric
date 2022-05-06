@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import warnings
+from dataclasses import dataclass
 from functools import wraps
 from types import FunctionType, MethodDescriptorType, MethodType, ModuleType
 from typing import Any, Callable, Container, Optional, cast
@@ -24,7 +25,7 @@ from typing_extensions import Protocol
 from .runtime import runtime
 from .utils import find_last_user_frames, find_last_user_stacklevel
 
-__all__ = ("clone_module",)
+__all__ = ("clone_class", "clone_module")
 
 FALLBACK_WARNING = (
     "cuNumeric has not implemented {name} "
@@ -66,21 +67,21 @@ class AnyCallable(Protocol):
         ...
 
 
-class CuWrapped(Protocol):
-    _cunumeric_implemented: bool
-
-    def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        ...
+@dataclass(frozen=True)
+class CuWrapperMetadata:
+    implemented: bool
 
 
-def implemented(
-    func: AnyCallable, prefix: str, name: str, *, reporting: bool = True
-) -> CuWrapped:
+class CuWrapped(AnyCallable, Protocol):
+    _cunumeric: CuWrapperMetadata
+
+
+def implemented(func: AnyCallable, prefix: str, name: str) -> CuWrapped:
     name = f"{prefix}.{name}"
 
     wrapper: CuWrapped
 
-    if reporting:
+    if runtime.report_coverage:
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -92,21 +93,21 @@ def implemented(
 
     else:
 
-        wrapper = cast(CuWrapped, func)
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return func(*args, **kwargs)
 
-    wrapper._cunumeric_implemented = True
+    wrapper._cunumeric = CuWrapperMetadata(implemented=True)
 
     return wrapper
 
 
-def unimplemented(
-    func: AnyCallable, prefix: str, name: str, *, reporting: bool = True
-) -> CuWrapped:
+def unimplemented(func: AnyCallable, prefix: str, name: str) -> CuWrapped:
     name = f"{prefix}.{name}"
 
     wrapper: CuWrapped
 
-    if reporting:
+    if runtime.report_coverage:
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -128,7 +129,7 @@ def unimplemented(
             )
             return func(*args, **kwargs)
 
-    wrapper._cunumeric_implemented = False
+    wrapper._cunumeric = CuWrapperMetadata(implemented=False)
 
     return wrapper
 
@@ -162,22 +163,18 @@ def clone_module(
         omit_types=(ModuleType,),
     )
 
-    from numpy import ufunc as npufunc
-
     from ._ufunc.ufunc import ufunc as lgufunc
-
-    reporting = runtime.report_coverage
 
     for attr, value in new_globals.items():
         if isinstance(value, (FunctionType, lgufunc)):
-            wrapped = implemented(
-                cast(AnyCallable, value), mod_name, attr, reporting=reporting
-            )
+            wrapped = implemented(cast(AnyCallable, value), mod_name, attr)
             new_globals[attr] = wrapped
+
+    from numpy import ufunc as npufunc
 
     for attr, value in missing.items():
         if isinstance(value, (FunctionType, npufunc)):
-            wrapped = unimplemented(value, mod_name, attr, reporting=reporting)
+            wrapped = unimplemented(value, mod_name, attr)
             new_globals[attr] = wrapped
         else:
             new_globals[attr] = value
@@ -212,20 +209,14 @@ def clone_class(origin_class: type) -> Callable[[type], type]:
             omit_names=set(cls.__dict__).union(NDARRAY_INTERNAL),
         )
 
-        reporting = runtime.report_coverage
-
         for attr, value in cls.__dict__.items():
             if should_wrap(value):
-                wrapped = implemented(
-                    value, class_name, attr, reporting=reporting
-                )
+                wrapped = implemented(value, class_name, attr)
                 setattr(cls, attr, wrapped)
 
         for attr, value in missing.items():
             if should_wrap(value):
-                wrapped = unimplemented(
-                    value, class_name, attr, reporting=reporting
-                )
+                wrapped = unimplemented(value, class_name, attr)
                 setattr(cls, attr, wrapped)
             else:
                 setattr(cls, attr, value)

@@ -267,7 +267,7 @@ class EagerArray(NumPyThunk):
 
     def real(self):
         if self.deferred is not None:
-            return self.deferred.imag()
+            return self.deferred.real()
         return EagerArray(self.runtime, self.array.real)
 
     def conj(self):
@@ -533,29 +533,23 @@ class EagerArray(NumPyThunk):
             choices = tuple(c.array for c in args)
             self.array[:] = np.choose(rhs.array, choices, mode="raise")
 
-    def _diag_helper(
-        self,
-        rhs,
-        offset,
-        naxes,
-        extract,
-    ):
+    def _diag_helper(self, rhs, offset, naxes, extract, trace):
         self.check_eager_args(rhs)
         if self.deferred is not None:
-            self.deferred._diag_helper(
-                rhs,
-                offset,
-                naxes,
-                extract,
-            )
+            self.deferred._diag_helper(rhs, offset, naxes, extract, trace)
         else:
-            if (naxes == 2) and extract:
+            if (naxes == 2) and extract and not trace:
                 ndims = rhs.array.ndim
                 self.array[:] = np.diagonal(
                     rhs.array, offset=offset, axis1=ndims - 2, axis2=ndims - 1
                 )
             elif (naxes < 2) and not extract:
                 self.array[:] = np.diag(rhs.array, offset)
+            elif (naxes >= 2) and trace:
+                ndim = rhs.array.ndim
+                self.array[:] = np.trace(
+                    rhs.array, offset=offset, axis1=ndim - 2, axis2=ndim - 1
+                )
             else:  # naxes>2
                 ndims = rhs.array.ndim
                 axes = tuple(range(ndims - naxes, ndims))
@@ -615,6 +609,24 @@ class EagerArray(NumPyThunk):
                 self.array = np.argsort(rhs.array, axis, kind, order)
             else:
                 self.array = np.sort(rhs.array, axis, kind, order)
+
+    def partition(
+        self,
+        rhs,
+        kth,
+        argpartition=False,
+        axis=-1,
+        kind="introselect",
+        order=None,
+    ):
+        self.check_eager_args(rhs, kth, axis, kind, order)
+        if self.deferred is not None:
+            self.deferred.partition(rhs, kth, argpartition, axis, kind, order)
+        else:
+            if argpartition:
+                self.array = np.argpartition(rhs.array, kth, axis, kind, order)
+            else:
+                self.array = np.partition(rhs.array, kth, axis, kind, order)
 
     def random_uniform(self):
         if self.deferred is not None:
